@@ -38,7 +38,7 @@ export default function Home() {
               MODEL OPTIMIZATION
             </h2>
             <p className="text-gray-300 mb-6 leading-relaxed">
-              Optimize performance of your local deploymentswith our toolkit. 
+              Optimize performance of your local deployments with our toolkit. 
               Compare trade-offs between model size, speed, and resource usage.
             </p>
             <button className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium">
