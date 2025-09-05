@@ -15,7 +15,7 @@ export default function Home() {
           <h2 className="text-2xl font-bold text-red-400 mb-4">The Problem</h2>
           <p className="text-gray-300 text-lg leading-relaxed">
             Users lack tools to measure the energy impact of local LLMs. Without visibility into resource consumption, 
-            it's impossible to make informed decisions about model selection, optimization, or sustainable AI practices.
+            it&apos;s impossible to make informed decisions about model selection, optimization, or sustainable AI practices.
           </p>
         </section>
 
