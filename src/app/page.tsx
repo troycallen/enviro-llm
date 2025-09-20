@@ -1,7 +1,10 @@
+import NavBar from '../components/NavBar';
+
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-900 font-inter p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-900 font-inter">
+      <NavBar />
+      <div className="max-w-6xl mx-auto p-8">
         <header className="text-center mb-16">
           <h1 className="text-6xl font-bold text-white mb-6 tracking-tight">
             EnviroLLM
@@ -20,28 +23,28 @@ export default function Home() {
         </section>
 
         <main className="grid md:grid-cols-2 gap-8">
-          <div className="bg-gray-800 border border-gray-700 p-8">
+          <div className="bg-gray-800 border border-gray-700 p-8 flex flex-col">
             <h2 className="text-2xl font-bold text-blue-400 mb-4 font-jetbrains-mono">
               REAL-TIME MONITORING
             </h2>
-            <p className="text-gray-300 mb-6 leading-relaxed">
-              Track resource usage of your local LLMs with visual dashboards. 
+            <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
+              Track resource usage of your local LLMs with visual dashboards.
               Monitor CPU, GPU, and memory usage in real-time.
             </p>
-            <a href="/dashboard" className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 border border-blue-500 transition-colors font-medium">
+            <a href="/dashboard" className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 border border-blue-500 transition-colors font-medium w-fit">
               Start Monitoring
             </a>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 p-8">
+          <div className="bg-gray-800 border border-gray-700 p-8 flex flex-col">
             <h2 className="text-2xl font-bold text-green-400 mb-4 font-jetbrains-mono">
               MODEL OPTIMIZATION
             </h2>
-            <p className="text-gray-300 mb-6 leading-relaxed">
-              Optimize performance of your local deployments with our toolkit. 
+            <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
+              Optimize performance of your local deployments.
               Compare trade-offs between model size, speed, and resource usage.
             </p>
-            <button className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium">
+            <button className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium w-fit">
               Optimize Models
             </button>
           </div>
