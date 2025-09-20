@@ -28,9 +28,9 @@ export default function Home() {
               Track resource usage of your local LLMs with visual dashboards. 
               Monitor CPU, GPU, and memory usage in real-time.
             </p>
-            <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 border border-blue-500 transition-colors font-medium">
+            <a href="/dashboard" className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 border border-blue-500 transition-colors font-medium">
               Start Monitoring
-            </button>
+            </a>
           </div>
 
           <div className="bg-gray-800 border border-gray-700 p-8">
