@@ -10,10 +10,10 @@ export default function NavBar() {
 
         <div className="flex items-center space-x-6">
           <Link
-            href="/dashboard"
+            href="/faq"
             className="text-gray-300 hover:text-white transition-colors font-medium"
           >
-            Dashboard
+            FAQ
           </Link>
           <a
             href="https://github.com/troycallen/envirollm"
