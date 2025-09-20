@@ -40,7 +40,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/envirollm
+git clone https://github.com/troycallen/envirollm
 cd envirollm
 
 # Install dependencies

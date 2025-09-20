@@ -32,7 +32,7 @@ export default function FAQ() {
           <div className="bg-gray-800 border border-gray-700 p-6 rounded">
             <h2 className="text-2xl font-bold text-yellow-400 mb-4">How do I start?</h2>
             <div className="text-gray-300 leading-relaxed space-y-4">
-              <p>Just hit "Start Monitoring" on the homepage - you'll see live metrics right away.</p>
+              <p>Just hit &ldquo;Start Monitoring&rdquo; on the homepage - you&apos;ll see live metrics right away.</p>
               <p>Want to track specific LLM processes? Run the CLI:</p>
               <div className="bg-gray-900 p-4 rounded mt-2">
                 <code className="text-green-400">
@@ -76,7 +76,7 @@ export default function FAQ() {
           <div className="bg-gray-800 border border-gray-700 p-6 rounded">
             <h2 className="text-2xl font-bold text-cyan-400 mb-4">Can I contribute?</h2>
             <p className="text-gray-300 leading-relaxed">
-              Absolutely! Everything's available on <a href="https://github.com/troycallen/envirollm" className="text-blue-400 hover:text-blue-300" target="_blank" rel="noopener noreferrer">GitHub</a>.
+              Absolutely! Everything&apos;s available on <a href="https://github.com/troycallen/envirollm" className="text-blue-400 hover:text-blue-300" target="_blank" rel="noopener noreferrer">GitHub</a>.
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export default function FAQ() {
             <h2 className="text-2xl font-bold text-orange-400 mb-4">Why build this?</h2>
             <p className="text-gray-300 leading-relaxed">
               LLMs are a fascinating technology to me, but running them locally can be a black box. I wanted to create a tool that gives users visibility and control over the environmental impact of their AI experiments.
-              Since I'm not able to impact cloud-based inference, I thought this would be a good way to contribute to more sustainable AI practices.
+              Since I&apos;m not able to impact cloud-based inference, I thought this would be a good way to contribute to more sustainable AI practices.
             </p>
           </div>
         </div>
