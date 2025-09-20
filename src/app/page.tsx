@@ -1,6 +1,22 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import NavBar from '../components/NavBar';
 
 export default function Home() {
+  const [isMonitoring, setIsMonitoring] = useState(false);
+
+  useEffect(() => {
+    const hasVisitedDashboard = localStorage.getItem('hasVisitedDashboard');
+    if (hasVisitedDashboard) {
+      setIsMonitoring(true);
+    }
+  }, []);
+
+  const handleStartMonitoring = () => {
+    localStorage.setItem('hasVisitedDashboard', 'true');
+    setIsMonitoring(true);
+  };
   return (
     <div className="min-h-screen bg-gray-900 font-inter">
       <NavBar />
@@ -31,8 +47,16 @@ export default function Home() {
               Track resource usage of your local LLMs with visual dashboards.
               Monitor CPU, GPU, and memory usage in real-time.
             </p>
-            <a href="/dashboard" className="inline-block bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 border border-blue-500 transition-colors font-medium w-fit">
-              Start Monitoring
+            <a
+              href="/dashboard"
+              onClick={handleStartMonitoring}
+              className={`inline-block px-8 py-3 transition-colors font-medium w-fit ${
+                isMonitoring
+                  ? 'bg-green-600 hover:bg-green-500 text-white border border-green-500'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white border border-blue-500'
+              }`}
+            >
+{isMonitoring ? '● Monitoring' : 'Start Monitoring'}
             </a>
           </div>
 

@@ -16,6 +16,8 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    localStorage.setItem('hasVisitedDashboard', 'true');
+
     const fetchMetrics = async () => {
       try {
         const response = await fetch('https://enviro-llm-production.up.railway.app/metrics');
