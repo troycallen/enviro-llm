@@ -13,14 +13,12 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isMonitoring, setIsMonitoring] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('hasVisitedDashboard', 'true');
 
     // Check if monitoring is active
     const hasVisitedDashboard = localStorage.getItem('hasVisitedDashboard');
-    setIsMonitoring(!!hasVisitedDashboard);
 
     if (hasVisitedDashboard) {
       const fetchMetrics = async () => {
@@ -34,7 +32,7 @@ export default function Dashboard() {
           } else {
             throw new Error('Backend not responding');
           }
-        } catch (err) {
+        } catch {
           setIsConnected(false);
           setError('Unable to connect to EnviroLLM backend. The monitoring service may be temporarily unavailable.');
         }
