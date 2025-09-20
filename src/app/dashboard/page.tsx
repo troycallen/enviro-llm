@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import NavBar from '../../components/NavBar';
-
 interface Metrics {
   timestamp: string;
   cpu_usage: number;
@@ -14,31 +13,38 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMonitoring, setIsMonitoring] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('hasVisitedDashboard', 'true');
 
-    const fetchMetrics = async () => {
-      try {
-        const response = await fetch('https://enviro-llm-production.up.railway.app/metrics');
-        if (response.ok) {
-          const data = await response.json();
-          setMetrics(data);
-          setIsConnected(true);
-          setError(null);
-        } else {
-          throw new Error('Backend not responding');
+    // Check if monitoring is active
+    const hasVisitedDashboard = localStorage.getItem('hasVisitedDashboard');
+    setIsMonitoring(!!hasVisitedDashboard);
+
+    if (hasVisitedDashboard) {
+      const fetchMetrics = async () => {
+        try {
+          const response = await fetch('https://enviro-llm-production.up.railway.app/metrics');
+          if (response.ok) {
+            const data = await response.json();
+            setMetrics(data);
+            setIsConnected(true);
+            setError(null);
+          } else {
+            throw new Error('Backend not responding');
+          }
+        } catch (err) {
+          setIsConnected(false);
+          setError('Unable to connect to EnviroLLM backend. The monitoring service may be temporarily unavailable.');
         }
-      } catch (err) {
-        setIsConnected(false);
-        setError('Unable to connect to EnviroLLM backend. The monitoring service may be temporarily unavailable.');
-      }
-    };
+      };
 
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 2000);
+      fetchMetrics();
+      const interval = setInterval(fetchMetrics, 2000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   return (
@@ -70,45 +76,43 @@ export default function Dashboard() {
           </div>
         )}
 
-        {metrics && (
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-gray-800 border border-gray-700 p-6 rounded">
-              <h3 className="text-blue-400 font-bold text-lg mb-2">CPU Usage</h3>
-              <div className="text-3xl font-mono text-white">
-                {metrics.cpu_usage.toFixed(1)}%
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
-                <div
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(metrics.cpu_usage, 100)}%` }}
-                ></div>
-              </div>
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-gray-800 border border-gray-700 p-6 rounded">
+            <h3 className="text-blue-400 font-bold text-lg mb-2">CPU Usage</h3>
+            <div className="text-3xl font-mono text-white">
+              {metrics ? metrics.cpu_usage.toFixed(1) : '0.0'}%
             </div>
-
-            <div className="bg-gray-800 border border-gray-700 p-6 rounded">
-              <h3 className="text-green-400 font-bold text-lg mb-2">Memory Usage</h3>
-              <div className="text-3xl font-mono text-white">
-                {metrics.memory_usage.toFixed(1)}%
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
-                <div
-                  className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(metrics.memory_usage, 100)}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div className="bg-gray-800 border border-gray-700 p-6 rounded">
-              <h3 className="text-yellow-400 font-bold text-lg mb-2">Power Estimate</h3>
-              <div className="text-3xl font-mono text-white">
-                {metrics.power_estimate.toFixed(1)}W
-              </div>
-              <div className="text-sm text-gray-400 mt-2">
-                Estimated system power draw
-              </div>
+            <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${metrics ? Math.min(metrics.cpu_usage, 100) : 0}%` }}
+              ></div>
             </div>
           </div>
-        )}
+
+          <div className="bg-gray-800 border border-gray-700 p-6 rounded">
+            <h3 className="text-green-400 font-bold text-lg mb-2">Memory Usage</h3>
+            <div className="text-3xl font-mono text-white">
+              {metrics ? metrics.memory_usage.toFixed(1) : '0.0'}%
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${metrics ? Math.min(metrics.memory_usage, 100) : 0}%` }}
+              ></div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800 border border-gray-700 p-6 rounded">
+            <h3 className="text-yellow-400 font-bold text-lg mb-2">Power Estimate</h3>
+            <div className="text-3xl font-mono text-white">
+              {metrics ? metrics.power_estimate.toFixed(1) : '0.0'}W
+            </div>
+            <div className="text-sm text-gray-400 mt-2">
+              Estimated system power draw
+            </div>
+          </div>
+        </div>
 
         {metrics && (
           <div className="bg-blue-900 border border-blue-700 p-4 mb-8 rounded">
