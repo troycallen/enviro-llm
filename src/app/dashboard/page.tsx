@@ -132,7 +132,7 @@ export default function Dashboard() {
 
         {metrics && (
           <div className="mt-8 text-center text-gray-500 text-sm">
-            Last updated: {new Date(metrics.timestamp).toLocaleTimeString()}
+            Last updated: {new Date().toLocaleString()}
           </div>
         )}
       </div>
