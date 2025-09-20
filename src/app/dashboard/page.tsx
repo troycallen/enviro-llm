@@ -108,6 +108,15 @@ export default function Dashboard() {
           </div>
         )}
 
+        {metrics && (
+          <div className="bg-blue-900 border border-blue-700 p-4 mb-8 rounded">
+            <p className="text-blue-300 text-sm">
+              <strong>Demo Mode:</strong> Currently showing Railway server metrics for demonstration.
+              To monitor your local machine, install and run the CLI tool below.
+            </p>
+          </div>
+        )}
+
         <div className="bg-gray-800 border border-gray-700 p-8 rounded">
           <h2 className="text-2xl font-bold text-white mb-4">Getting Started</h2>
           <div className="space-y-4 text-gray-300">
