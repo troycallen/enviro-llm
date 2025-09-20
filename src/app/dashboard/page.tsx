@@ -17,7 +17,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const response = await fetch('http://localhost:8000/metrics');
+        const response = await fetch('https://enviro-llm-production.up.railway.app/metrics');
         if (response.ok) {
           const data = await response.json();
           setMetrics(data);
@@ -28,7 +28,7 @@ export default function Dashboard() {
         }
       } catch (err) {
         setIsConnected(false);
-        setError('Unable to connect to EnviroLLM backend. Make sure to run: python backend/main.py');
+        setError('Unable to connect to EnviroLLM backend. The monitoring service may be temporarily unavailable.');
       }
     };
 

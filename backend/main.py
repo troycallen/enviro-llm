@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import psutil
 import uvicorn
+import os
 from datetime import datetime
 
 app = FastAPI(title="EnviroLLM API", version="1.0.0")
@@ -28,4 +29,5 @@ async def get_metrics():
     }
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
