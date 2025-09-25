@@ -52,19 +52,45 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Backend & CLI Tools
+
+The project includes additional components for local monitoring:
+
+**Python Backend**
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
+```
+
+**CLI Tool**
+```bash
+cd cli
+npm install
+npx tsx index.ts detect    
+npx tsx index.ts track --auto    
+```
 
 ## Project Structure
 
 ```
 envirollm/
-├── app/                    # Next.js app directory
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Homepage
-├── public/                # Static assets
-├── components/            # Reusable components (coming soon)
-└── README.md
+├── src/
+│   ├── app/                # Next.js app directory
+│   │   ├── dashboard/      # Real-time monitoring dashboard
+│   │   ├── faq/           # FAQ page
+│   │   ├── globals.css    # Global styles
+│   │   ├── layout.tsx     # Root layout
+│   │   └── page.tsx       # Homepage
+│   └── components/        # Reusable React components
+│       └── NavBar.tsx     # Navigation component
+├── backend/               # Python FastAPI backend
+│   └── main.py           # Metrics collection API
+├── cli/                  # Node.js CLI tool
+│   ├── index.ts          # LLM process detection & tracking
+│   └── package.json      # CLI dependencies
+├── public/               # Static assets
+└── package.json          # Frontend dependencies
 ```
 
 ## Contributing
