@@ -8,8 +8,9 @@ An open-source toolkit for tracking, benchmarking, and optimizing energy and res
 
 Large language models are increasingly being deployed locally for privacy and accessibility reasons. However, users currently lack tools to measure or optimize their energy and resource impact. EnviroLLM aims to fill this gap by providing practical monitoring and optimization capabilities.
 
-### Key Features (Planned)
+### Key Features
 - **Real-time Monitoring**: Track energy consumption and resource usage with visual dashboards
+- **CLI Tool**: Command-line interface for detecting and monitoring LLM processes
 - **Model Optimization**: Reduce energy usage through quantization, pruning, and compression techniques
 - **Benchmarking**: Compare local vs. cloud deployment impacts
 - **Visual Feedback**: Clear performance vs. efficiency trade-offs
@@ -103,7 +104,7 @@ My background is in systems and ML optimization. Volunteering with environmental
 
 ## Deployment
 
-The application is automatically deployed to [envirollm.com](https://envirollm.com) via Vercel when changes are pushed to the main branch.
+The application is automatically deployed to [envirollm.com](https://envirollm.com) via Vercel and Railway when changes are pushed to the main branch.
 
 ## License
 
