@@ -2,11 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import NavBar from '../../components/NavBar';
+interface GPU {
+  id: number;
+  name: string;
+  usage_percent: number;
+  memory_used_gb: number;
+  memory_total_gb: number;
+  memory_percent: number;
+  power_watts: number;
+  temperature_c: number;
+}
+
 interface Metrics {
   timestamp: string;
   cpu_usage: number;
   memory_usage: number;
   power_estimate: number;
+  gpu_info: {
+    available: boolean;
+    gpus: GPU[];
+    error?: string;
+  };
 }
 
 export default function Dashboard() {
@@ -23,7 +39,9 @@ export default function Dashboard() {
     if (hasVisitedDashboard) {
       const fetchMetrics = async () => {
         try {
-          const response = await fetch('https://enviro-llm-production.up.railway.app/metrics');
+          const response = await fetch(process.env.NODE_ENV === 'development'
+            ? 'http://localhost:8000/metrics'
+            : 'https://enviro-llm-production.up.railway.app/metrics');
           if (response.ok) {
             const data = await response.json();
             setMetrics(data);
@@ -51,9 +69,9 @@ export default function Dashboard() {
       <div className="max-w-6xl mx-auto p-8">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">
-            EnviroLLM Dashboard
+           Monitoring Dashboard
           </h1>
-          <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="flex items-center justify-center gap-2">
             <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
             <span className="text-gray-300">
               {isConnected ? 'Connected to monitoring service' : 'Disconnected'}
@@ -74,7 +92,17 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-white">System Metrics</h2>
+            <a
+              href="/optimize"
+              className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded border border-green-500 transition-colors font-medium"
+            >
+              Get Recommendations
+            </a>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
           <div className="bg-gray-800 border border-gray-700 p-6 rounded">
             <h3 className="text-blue-400 font-bold text-lg mb-2">CPU Usage</h3>
             <div className="text-3xl font-mono text-white">
@@ -110,13 +138,57 @@ export default function Dashboard() {
               Estimated system power draw
             </div>
           </div>
+          </div>
         </div>
+
+        {metrics && metrics.gpu_info.available && metrics.gpu_info.gpus.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">GPU Metrics</h2>
+            <div className="grid gap-4">
+              {metrics.gpu_info.gpus.map((gpu) => (
+                <div key={gpu.id} className="bg-gray-800 border border-gray-700 p-6 rounded">
+                  <h3 className="text-purple-400 font-bold text-lg mb-4">{gpu.name}</h3>
+                  <div className="grid md:grid-cols-4 gap-4">
+                    <div>
+                      <div className="text-sm text-gray-400">GPU Usage</div>
+                      <div className="text-2xl font-mono text-white">{gpu.usage_percent}%</div>
+                      <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                        <div
+                          className="bg-purple-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(gpu.usage_percent, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">VRAM</div>
+                      <div className="text-2xl font-mono text-white">{gpu.memory_percent.toFixed(1)}%</div>
+                      <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                        <div
+                          className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(gpu.memory_percent, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">Power</div>
+                      <div className="text-2xl font-mono text-white">{gpu.power_watts}W</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-400">Temperature</div>
+                      <div className="text-2xl font-mono text-white">{gpu.temperature_c}°C</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {metrics && (
           <div className="bg-blue-900 border border-blue-700 p-4 mb-8 rounded">
             <p className="text-blue-300 text-sm">
-              <strong>Demo Mode:</strong> Currently showing Railway server metrics for demonstration.
-              To monitor your local machine, install and run the CLI tool below.
+              <strong>Demo Mode:</strong> Currently showing Railway server metrics.
+              To monitor your local machine, install the CLI tool below or clone the repo and run the backend locally.
             </p>
           </div>
         )}
@@ -125,23 +197,24 @@ export default function Dashboard() {
           <h2 className="text-2xl font-bold text-white mb-4">Getting Started</h2>
           <div className="space-y-4 text-gray-300">
             <div>
-              <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Start the Backend</h3>
+              <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Install CLI Tool</h3>
               <code className="bg-gray-900 px-4 py-2 rounded block">
-                cd backend && python main.py
+                npm install -g envirollm-cli
               </code>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-green-400 mb-2">2. Use the CLI for Advanced Monitoring</h3>
+              <h3 className="text-lg font-semibold text-green-400 mb-2">2. Start Monitoring Service</h3>
               <code className="bg-gray-900 px-4 py-2 rounded block">
-                cd cli && npm run dev track --auto
+                envirollm start
               </code>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-yellow-400 mb-2">3. Monitor Your LLM Processes</h3>
-              <p>The dashboard will automatically detect and track resource usage of your local LLM deployments.</p>
+              <h3 className="text-lg font-semibold text-yellow-400 mb-2">3. View Your Real Metrics</h3>
+              <p>Return to this dashboard to see your local system metrics in real-time.</p>
             </div>
           </div>
         </div>
+
 
         {metrics && (
           <div className="mt-8 text-center text-gray-500 text-sm">
