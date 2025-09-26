@@ -22,7 +22,9 @@ def get_gpu_info():
 
             for i in range(device_count):
                 handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-                name = pynvml.nvmlDeviceGetName(handle).decode('utf-8')
+                name = pynvml.nvmlDeviceGetName(handle)
+                if isinstance(name, bytes):
+                    name = name.decode('utf-8')
 
                 memory_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
                 memory_used = memory_info.used / 1024**3
@@ -59,6 +61,35 @@ def get_gpu_info():
             gpu_info["error"] = str(e)
 
     return gpu_info
+
+def get_system_info():
+    memory_gb = psutil.virtual_memory().total / (1024**3)
+    cpu_cores = psutil.cpu_count()
+    cpu_freq = psutil.cpu_freq()
+    gpu_info = get_gpu_info()
+
+    # Get detailed system info
+    import platform
+    system_info = {
+        "cpu_brand": platform.processor() or "Unknown CPU",
+        "cpu_cores_physical": psutil.cpu_count(logical=False),
+        "cpu_cores_logical": psutil.cpu_count(logical=True),
+        "cpu_frequency_max": cpu_freq.max if cpu_freq else None,
+        "memory_total_gb": round(memory_gb, 1),
+        "platform": f"{platform.system()} {platform.release()}",
+        "architecture": platform.machine()
+    }
+
+    return {
+        "system_specs": {
+            "memory_gb": round(memory_gb, 1),
+            "cpu_cores": cpu_cores,
+            "gpu_available": gpu_info["available"],
+            "gpus": gpu_info["gpus"] if gpu_info["available"] else []
+        },
+        "detailed_system_info": system_info
+    }
+
 
 def get_optimization_recommendations():
     recommendations = []
@@ -159,6 +190,10 @@ async def get_metrics():
 @app.get("/optimize")
 async def get_optimization():
     return get_optimization_recommendations()
+
+@app.get("/system")
+async def get_system_info_endpoint():
+    return get_system_info()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
