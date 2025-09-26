@@ -16,7 +16,11 @@ interface OptimizationData {
     memory_gb: number;
     cpu_cores: number;
     gpu_available: boolean;
-    gpus: any[];
+    gpus: Array<{
+      id: number;
+      name: string;
+      memory_total_gb: number;
+    }>;
   };
   recommendations: Recommendation[];
 }
