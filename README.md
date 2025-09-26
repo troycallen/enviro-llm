@@ -64,12 +64,13 @@ pip install -r requirements.txt
 python main.py
 ```
 
-**CLI Tool**
+**CLI Tool** (for local monitoring)
 ```bash
 cd cli
 npm install
-npx tsx index.ts detect    
-npx tsx index.ts track --auto    
+npx tsx index.ts start     # Start local monitoring service
+npx tsx index.ts detect    # Detect LLM processes
+npx tsx index.ts track --auto    # Track LLM processes
 ```
 
 ## Project Structure
@@ -85,13 +86,18 @@ envirollm/
 │   │   └── page.tsx       # Homepage
 │   └── components/        # Reusable React components
 │       └── NavBar.tsx     # Navigation component
-├── backend/               # Python FastAPI backend
-│   └── main.py           # Metrics collection API
-├── cli/                  # Node.js CLI tool
-│   ├── index.ts          # LLM process detection & tracking
-│   └── package.json      # CLI dependencies
-├── public/               # Static assets
-└── package.json          # Frontend dependencies
+├── backend/               # Main Python FastAPI backend (production)
+│   ├── main.py           # Full API with recommendations
+│   └── requirements.txt  # Production dependencies
+├── cli/                   # CLI tool for local monitoring
+│   ├── backend/           # Local metrics collection backend
+│   │   ├── main.py        # Lightweight metrics API
+│   │   └── requirements.txt
+│   ├── index.ts           # CLI source code
+│   ├── index.js           # Compiled CLI executable
+│   └── package.json       # CLI dependencies
+├── public/                # Static assets
+└── package.json           # Frontend dependencies
 ```
 
 ## Contributing
