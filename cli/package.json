@@ -8,7 +8,27 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node index.ts"
+    "dev": "ts-node index.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "llm",
+    "monitoring",
+    "energy",
+    "optimization",
+    "gpu",
+    "ai"
+  ],
+  "author": "EnviroLLM (Troy Allen)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/troycallen/enviro-llm.git"
+  },
+  "homepage": "https://envirollm.com",
+  "preferGlobal": true,
+  "engines": {
+    "node": ">=14.0.0"
   },
   "dependencies": {
     "commander": "^11.0.0",
