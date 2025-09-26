@@ -40,6 +40,7 @@ export default function Home() {
     localStorage.removeItem('hasVisitedDashboard');
     setIsMonitoring(false);
   };
+
   return (
     <div className="min-h-screen bg-gray-900 font-inter">
       <NavBar />
@@ -96,11 +97,11 @@ export default function Home() {
               MODEL OPTIMIZATION
             </h2>
             <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
-              Optimize performance of your local deployments.
-              Compare trade-offs between model size, speed, and resource usage.
+              Analyze your system and get optimization suggestions.
+              Reduce memory usage and improve performance for your hardware.
             </p>
             <button className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium w-fit">
-              Optimize Models
+              Get Recommendations
             </button>
           </div>
         </main>
