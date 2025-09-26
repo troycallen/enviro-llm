@@ -100,9 +100,12 @@ export default function Home() {
               Analyze your system and get optimization suggestions.
               Reduce memory usage and improve performance for your hardware.
             </p>
-            <button className="bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium w-fit">
+            <a
+              href="/optimize"
+              className="inline-block bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium w-fit"
+            >
               Get Recommendations
-            </button>
+            </a>
           </div>
         </main>
       </div>
