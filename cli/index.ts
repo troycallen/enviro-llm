@@ -17,19 +17,34 @@ program
 
 // LLM process names keywords to look for
 const LLM_PROCESSES = [
-  'ollama', 'llama', 'python', 'node', 'llamacpp', 'text-generation-webui',
-  'koboldcpp', 'oobabooga', 'lmstudio', 'gpt4all'
+  'ollama', 'llama.cpp', 'llama-server', 'llamacpp', 'text-generation-webui',
+  'koboldcpp', 'oobabooga', 'lmstudio', 'gpt4all', 'localai', 'vllm',
+  'llama-cpp-python', 'transformers', 'inference'
 ];
 
 async function findLLMProcesses() {
   try {
     const processes = await si.processes();
-    return processes.list.filter(proc =>
-      LLM_PROCESSES.some(name =>
-        proc.name?.toLowerCase().includes(name) ||
-        proc.command?.toLowerCase().includes(name)
-      )
-    );
+    return processes.list.filter(proc => {
+      const procName = proc.name?.toLowerCase() || '';
+      const procCommand = proc.command?.toLowerCase() || '';
+
+      // Exclude common false positives
+      const excludePatterns = [
+        'code.exe', 'vscode', 'electron', 'chrome', 'node_modules',
+        'npm', 'npx', 'esbuild', 'webpack', 'typescript', 'tsx',
+        'postcss', 'nvidia web helper', 'discord'
+      ];
+
+      if (excludePatterns.some(pattern => procName.includes(pattern) || procCommand.includes(pattern))) {
+        return false;
+      }
+
+      // Match LLM processes
+      return LLM_PROCESSES.some(name =>
+        procName.includes(name) || procCommand.includes(name)
+      );
+    });
   } catch (error) {
     return [];
   }
