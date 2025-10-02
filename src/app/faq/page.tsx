@@ -36,7 +36,7 @@ export default function FAQ() {
               <p>Want to track specific LLM processes? Run the CLI:</p>
               <div className="bg-gray-900 p-4 rounded mt-2">
                 <code className="text-green-400">
-                  cd cli && npm run dev track --auto
+                  cd cli && npx tsx index.ts track --auto
                 </code>
               </div>
             </div>
