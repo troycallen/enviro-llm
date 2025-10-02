@@ -130,7 +130,7 @@ program
 program
   .command('start')
   .description('Start the EnviroLLM web monitoring service')
-  .option('-p, --port <port>', 'Port to run the service on', '8000')
+  .option('-p, --port <port>', 'Port to run the service on', '8001')
   .action(async (options) => {
     console.log('Starting EnviroLLM monitoring service...');
     console.log(`Local endpoint: http://localhost:${options.port}`);
@@ -186,7 +186,7 @@ program
   .command('status')
   .description('Check if EnviroLLM web service is running')
   .action(() => {
-    const req = http.get('http://localhost:8000/', (res) => {
+    const req = http.get('http://localhost:8001/', (res) => {
       console.log('EnviroLLM service is running');
       console.log('Visit: https://envirollm.com');
     });
