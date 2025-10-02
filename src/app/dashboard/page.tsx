@@ -205,27 +205,39 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="bg-gray-800 border border-gray-700 p-8 rounded">
-          <h2 className="text-2xl font-bold text-white mb-4">Getting Started</h2>
-          <div className="space-y-4 text-gray-300">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Install CLI Tool</h3>
-              <code className="bg-gray-900 px-4 py-2 rounded block">
-                npm install -g envirollm-cli
-              </code>
+        {isConnected && !error ? (
+          <div className="bg-green-900 border border-green-700 p-8 rounded">
+            <div className="flex items-center gap-3">
+              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+              <h2 className="text-2xl font-bold text-green-400">Successfully Connected</h2>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-green-400 mb-2">2. Start Monitoring Service</h3>
-              <code className="bg-gray-900 px-4 py-2 rounded block">
-                envirollm start
-              </code>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-yellow-400 mb-2">3. View Your Real Metrics</h3>
-              <p>Return to this dashboard to see your local system metrics in real-time.</p>
+            <p className="text-green-200 mt-4">
+              Your local monitoring service is running and sending metrics from your system.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-gray-800 border border-gray-700 p-8 rounded">
+            <h2 className="text-2xl font-bold text-white mb-4">Getting Started</h2>
+            <div className="space-y-4 text-gray-300">
+              <div>
+                <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Clone the Repository</h3>
+                <code className="bg-gray-900 px-4 py-2 rounded block">
+                  git clone https://github.com/troycallen/enviro-llm.git
+                </code>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-400 mb-2">2. Start Monitoring Service</h3>
+                <code className="bg-gray-900 px-4 py-2 rounded block">
+                  cd enviro-llm/cli && npx tsx index.ts start
+                </code>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-yellow-400 mb-2">3. View Your Real Metrics</h3>
+                <p>Return to this dashboard to see your local system metrics in real-time.</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
 
         {metrics && (
