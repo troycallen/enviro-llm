@@ -23,6 +23,12 @@ interface OptimizationData {
     }>;
   };
   recommendations: Recommendation[];
+  cost_savings: {
+    potential_power_savings_watts: number;
+    monthly_savings_usd: number;
+    yearly_savings_usd: number;
+    kwh_rate: number;
+  };
 }
 
 export default function OptimizePage() {
@@ -146,6 +152,36 @@ export default function OptimizePage() {
                 </div>
               </div>
             </div>
+
+            {/* Cost Savings Panel */}
+            {optimizationData.cost_savings && optimizationData.cost_savings.potential_power_savings_watts > 0 && (
+              <div className="bg-green-900 border border-green-700 p-6 mb-8 rounded">
+                <h2 className="text-xl font-bold text-green-400 mb-4">Cost Savings</h2>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div>
+                    <div className="text-3xl font-bold text-white mb-1">
+                      {optimizationData.cost_savings.potential_power_savings_watts}W
+                    </div>
+                    <div className="text-sm text-green-300">Power Savings</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-white mb-1">
+                      ${optimizationData.cost_savings.monthly_savings_usd}/mo
+                    </div>
+                    <div className="text-sm text-green-300">Monthly</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-white mb-1">
+                      ${optimizationData.cost_savings.yearly_savings_usd}/yr
+                    </div>
+                    <div className="text-sm text-green-300">Yearly</div>
+                  </div>
+                </div>
+                <div className="mt-4 text-xs text-green-300">
+                  Based on ${optimizationData.cost_savings.kwh_rate}/kWh. Your rates may vary. These are estimated savings—currently researching proper metrics across other studies.
+                </div>
+              </div>
+            )}
 
             {/* Backend Recommendations */}
             <div className="mb-12">
