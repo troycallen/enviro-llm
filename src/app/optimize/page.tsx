@@ -33,18 +33,28 @@ export default function OptimizePage() {
   useEffect(() => {
     const fetchOptimizationData = async () => {
       try {
-        const response = await fetch(process.env.NODE_ENV === 'development'
-          ? 'http://localhost:8000/optimize'
-          : 'https://enviro-llm-production.up.railway.app/optimize');
+        // Try local backend first
+        const response = await fetch('http://localhost:8000/optimize');
 
         if (response.ok) {
           const data = await response.json();
           setOptimizationData(data);
         } else {
-          throw new Error('Failed to fetch optimization data');
+          throw new Error('Local backend not responding');
         }
       } catch (err) {
-        setError('Unable to connect to backend. Make sure the backend is running.');
+        // Fall back to Railway demo server
+        try {
+          const response = await fetch('https://enviro-llm-production.up.railway.app/optimize');
+          if (response.ok) {
+            const data = await response.json();
+            setOptimizationData(data);
+          } else {
+            throw new Error('Demo backend not responding');
+          }
+        } catch {
+          setError('Unable to connect to backend. Make sure the backend is running.');
+        }
       } finally {
         setIsLoading(false);
       }
