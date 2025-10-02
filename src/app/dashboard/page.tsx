@@ -91,18 +91,6 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {error && (
-          <div className="bg-red-900 border border-red-700 p-6 mb-8 rounded">
-            <h3 className="text-red-400 font-bold mb-2">Connection Error</h3>
-            <p className="text-red-300">{error}</p>
-            <div className="mt-4 text-sm text-red-200">
-              <p>To start monitoring:</p>
-              <code className="bg-red-800 px-2 py-1 rounded mt-1 block">
-                cd backend && python main.py
-              </code>
-            </div>
-          </div>
-        )}
 
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
