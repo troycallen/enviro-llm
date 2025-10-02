@@ -135,7 +135,7 @@ export default function Dashboard() {
               <h3 className="text-yellow-400 font-bold text-lg">Power Estimate</h3>
               <button
                 onClick={() => setShowPowerInfo(!showPowerInfo)}
-                className="text-yellow-400 hover:text-yellow-300 text-sm font-bold w-6 h-6 rounded-full border border-yellow-400 flex items-center justify-center"
+                className="text-yellow-400 hover:text-yellow-300 text-sm font-bold w-6 h-6 rounded-full border border-yellow-400 flex items-center justify-center cursor-pointer"
                 aria-label="Power calculation info"
               >
                 ?
@@ -154,7 +154,16 @@ export default function Dashboard() {
                   onClick={() => setShowPowerInfo(false)}
                 ></div>
                 <div className="absolute z-50 left-50 top-15 w-80 bg-gray-900 border border-yellow-500 rounded p-4 shadow-2xl">
-                  <h4 className="text-yellow-400 font-bold mb-2">Power Calculation Formula</h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-yellow-400 font-bold">Power Calculation Formula</h4>
+                    <button
+                      onClick={() => setShowPowerInfo(false)}
+                      className="text-yellow-400 hover:text-yellow-300 text-2xl font-bold cursor-pointer"
+                      aria-label="Close"
+                    >
+                      ×
+                    </button>
+                  </div>
                   <div className="text-sm text-gray-300 space-y-2">
                     <p><strong>Base Power:</strong> 50W (system idle)</p>
                     <p><strong>CPU Power:</strong> CPU Usage % × 2W</p>
