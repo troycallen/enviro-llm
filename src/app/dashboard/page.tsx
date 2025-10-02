@@ -29,6 +29,7 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPowerInfo, setShowPowerInfo] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('hasVisitedDashboard', 'true');
@@ -92,7 +93,7 @@ export default function Dashboard() {
         </header>
 
 
-        <div className="mb-8">
+        <div className="mb-8 relative">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-white">System Metrics</h2>
             <a
@@ -102,7 +103,7 @@ export default function Dashboard() {
               Get Recommendations
             </a>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-6 relative">
           <div className="bg-gray-800 border border-gray-700 p-6 rounded">
             <h3 className="text-blue-400 font-bold text-lg mb-2">CPU Usage</h3>
             <div className="text-3xl font-mono text-white">
@@ -129,14 +130,41 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 p-6 rounded">
-            <h3 className="text-yellow-400 font-bold text-lg mb-2">Power Estimate</h3>
+          <div className="bg-gray-800 border border-gray-700 p-6 rounded relative">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-yellow-400 font-bold text-lg">Power Estimate</h3>
+              <button
+                onClick={() => setShowPowerInfo(!showPowerInfo)}
+                className="text-yellow-400 hover:text-yellow-300 text-sm font-bold w-6 h-6 rounded-full border border-yellow-400 flex items-center justify-center"
+                aria-label="Power calculation info"
+              >
+                ?
+              </button>
+            </div>
             <div className="text-3xl font-mono text-white">
               {metrics ? metrics.power_estimate.toFixed(1) : '0.0'}W
             </div>
             <div className="text-sm text-gray-400 mt-2">
               Estimated system power draw
             </div>
+            {showPowerInfo && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowPowerInfo(false)}
+                ></div>
+                <div className="absolute z-50 left-50 top-15 w-80 bg-gray-900 border border-yellow-500 rounded p-4 shadow-2xl">
+                  <h4 className="text-yellow-400 font-bold mb-2">Power Calculation Formula</h4>
+                  <div className="text-sm text-gray-300 space-y-2">
+                    <p><strong>Base Power:</strong> 50W (system idle)</p>
+                    <p><strong>CPU Power:</strong> CPU Usage % × 2W</p>
+                    <p><strong>GPU Power:</strong> Actual measured GPU power</p>
+                    <p className="pt-2 border-t border-gray-700"><strong>Total:</strong> Base + CPU + GPU</p>
+                    <p className="text-xs text-gray-500 mt-2">Note: This is an estimate. Numbers may vary based on hardware.</p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
           </div>
         </div>
