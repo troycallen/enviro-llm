@@ -167,7 +167,7 @@ export default function Dashboard() {
                   <div className="text-sm text-gray-300 space-y-2">
                     <p><strong>Base Power:</strong> 50W (system idle)</p>
                     <p><strong>CPU Power:</strong> CPU Usage % × 2W</p>
-                    <p><strong>GPU Power:</strong> Actual measured GPU power</p>
+                    <p><strong>GPU Power:</strong> Measured GPU power</p>
                     <p className="pt-2 border-t border-gray-700"><strong>Total:</strong> Base + CPU + GPU</p>
                     <p className="text-xs text-gray-500 mt-2">Note: This is an estimate. Numbers may vary.</p>
                   </div>
