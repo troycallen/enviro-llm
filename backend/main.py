@@ -93,6 +93,7 @@ def get_system_info():
 
 def get_optimization_recommendations():
     recommendations = []
+    potential_power_savings = 0  
 
     memory_gb = psutil.virtual_memory().total / (1024**3)
     cpu_cores = psutil.cpu_count()
@@ -103,16 +104,20 @@ def get_optimization_recommendations():
             "priority": "high",
             "title": "Use 4-bit quantization",
             "description": "Your system has limited RAM. Use 4-bit quantized models to reduce memory usage by ~75%",
-            "implementation": "Use GPTQ or AWQ quantized models"
+            "implementation": "Use GPTQ or AWQ quantized models",
+            "power_savings_watts": 20
         })
+        potential_power_savings += 20
     elif memory_gb < 16:
         recommendations.append({
             "type": "quantization",
             "priority": "medium",
             "title": "Consider 8-bit quantization",
             "description": "8-bit quantization can reduce memory usage by ~50% with minimal quality loss",
-            "implementation": "Load models with load_in_8bit=True"
+            "implementation": "Load models with load_in_8bit=True",
+            "power_savings_watts": 10
         })
+        potential_power_savings += 10
 
     if gpu_info["available"] and gpu_info["gpus"]:
         for gpu in gpu_info["gpus"]:
@@ -122,16 +127,20 @@ def get_optimization_recommendations():
                     "priority": "high",
                     "title": f"Optimize for {gpu['name']}",
                     "description": f"GPU VRAM ({gpu['memory_total_gb']:.1f}GB) is limited. Use smaller models or CPU offloading",
-                    "implementation": "Try 7B parameter models or use device_map='auto'"
+                    "implementation": "Try 7B parameter models or use device_map='auto'",
+                    "power_savings_watts": 30
                 })
+                potential_power_savings += 30
     else:
         recommendations.append({
             "type": "hardware",
             "priority": "medium",
             "title": "CPU-only optimization",
             "description": "No GPU detected. Focus on CPU-optimized models and threading",
-            "implementation": "Use CPU-optimized formats like GGML/GGUF"
+            "implementation": "Use CPU-optimized formats like GGML/GGUF",
+            "power_savings_watts": 15
         })
+        potential_power_savings += 15
 
     if cpu_cores >= 8:
         recommendations.append({
@@ -139,8 +148,19 @@ def get_optimization_recommendations():
             "priority": "low",
             "title": "Parallel processing",
             "description": "Your CPU has multiple cores. Enable parallel processing for better throughput",
-            "implementation": "Set torch.set_num_threads() or use batch processing"
+            "implementation": "Set torch.set_num_threads() or use batch processing",
+            "power_savings_watts": 5
         })
+        potential_power_savings += 5
+
+    # Calculate cost savings (using US average of $0.15/kWh)
+    kwh_rate = 0.15
+    hours_per_month = 730  
+
+    # Convert watts to kilowatts and calculate monthly savings
+    monthly_kwh_saved = (potential_power_savings / 1000) * hours_per_month
+    monthly_cost_savings = monthly_kwh_saved * kwh_rate
+    yearly_cost_savings = monthly_cost_savings * 12
 
     return {
         "system_specs": {
@@ -149,7 +169,13 @@ def get_optimization_recommendations():
             "gpu_available": gpu_info["available"],
             "gpus": gpu_info["gpus"] if gpu_info["available"] else []
         },
-        "recommendations": recommendations
+        "recommendations": recommendations,
+        "cost_savings": {
+            "potential_power_savings_watts": round(potential_power_savings, 1),
+            "monthly_savings_usd": round(monthly_cost_savings, 2),
+            "yearly_savings_usd": round(yearly_cost_savings, 2),
+            "kwh_rate": kwh_rate
+        }
     }
 
 app.add_middleware(
