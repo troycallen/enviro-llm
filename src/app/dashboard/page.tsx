@@ -39,20 +39,32 @@ export default function Dashboard() {
     if (hasVisitedDashboard) {
       const fetchMetrics = async () => {
         try {
-          const response = await fetch(process.env.NODE_ENV === 'development'
-            ? 'http://localhost:8000/metrics'
-            : 'https://enviro-llm-production.up.railway.app/metrics');
+          // Try local CLI first
+          const response = await fetch('http://localhost:8001/metrics');
           if (response.ok) {
             const data = await response.json();
             setMetrics(data);
             setIsConnected(true);
             setError(null);
           } else {
-            throw new Error('Backend not responding');
+            throw new Error('Local backend not responding');
           }
         } catch {
-          setIsConnected(false);
-          setError('Unable to connect to EnviroLLM backend. The monitoring service may be temporarily unavailable.');
+          // Fall back to Railway demo server
+          try {
+            const response = await fetch('https://enviro-llm-production.up.railway.app/metrics');
+            if (response.ok) {
+              const data = await response.json();
+              setMetrics(data);
+              setIsConnected(true);
+              setError('Showing demo metrics. Start local CLI to see your system.');
+            } else {
+              throw new Error('Demo backend not responding');
+            }
+          } catch {
+            setIsConnected(false);
+            setError('Unable to connect to EnviroLLM backend. The monitoring service may be temporarily unavailable.');
+          }
         }
       };
 
