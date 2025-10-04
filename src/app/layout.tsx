@@ -13,8 +13,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EnviroLLM - Resource Tracking for Local AI",
+  title: "EnviroLLM",
   description: "Open-source toolkit for tracking and optimizing energy usage of local Large Language Models",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
