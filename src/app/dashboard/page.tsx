@@ -25,11 +25,22 @@ interface Metrics {
   };
 }
 
+interface SystemSpecs {
+  memory_gb: number;
+  cpu_cores: number;
+  gpu_available: boolean;
+  gpus: Array<{
+    name: string;
+    memory_total_gb: number;
+  }>;
+}
+
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPowerInfo, setShowPowerInfo] = useState(false);
+  const [systemSpecs, setSystemSpecs] = useState<SystemSpecs | null>(null);
 
   useEffect(() => {
     localStorage.setItem('hasVisitedDashboard', 'true');
@@ -71,6 +82,26 @@ export default function Dashboard() {
 
       fetchMetrics();
       const interval = setInterval(fetchMetrics, 2000);
+
+      // Fetch system specs once
+      const fetchSpecs = async () => {
+        try {
+          const response = await fetch('http://localhost:8000/optimize');
+          if (response.ok) {
+            const data = await response.json();
+            setSystemSpecs(data.system_specs);
+          }
+        } catch {
+          try {
+            const response = await fetch('https://enviro-llm-production.up.railway.app/optimize');
+            if (response.ok) {
+              const data = await response.json();
+              setSystemSpecs(data.system_specs);
+            }
+          } catch {}
+        }
+      };
+      fetchSpecs();
 
       return () => clearInterval(interval);
     }
@@ -115,6 +146,9 @@ export default function Dashboard() {
                 style={{ width: `${metrics ? Math.min(metrics.cpu_usage, 100) : 0}%` }}
               ></div>
             </div>
+            {systemSpecs && (
+              <div className="text-xs text-gray-400 mt-2">{systemSpecs.cpu_cores} cores</div>
+            )}
           </div>
 
           <div className="bg-gray-800 border border-gray-700 p-6 rounded">
@@ -128,6 +162,9 @@ export default function Dashboard() {
                 style={{ width: `${metrics ? Math.min(metrics.memory_usage, 100) : 0}%` }}
               ></div>
             </div>
+            {systemSpecs && (
+              <div className="text-xs text-gray-400 mt-2">{systemSpecs.memory_gb}GB total</div>
+            )}
           </div>
 
           <div className="bg-gray-800 border border-gray-700 p-6 rounded relative">
