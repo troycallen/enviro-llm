@@ -31,8 +31,27 @@ interface OptimizationData {
   };
 }
 
+interface BenchmarkResult {
+  id: string;
+  model_name: string;
+  quantization: string;
+  timestamp: string;
+  metrics: {
+    avg_cpu_usage: number;
+    avg_memory_usage: number;
+    avg_power_watts: number;
+    peak_memory_gb: number;
+    total_energy_wh: number;
+    duration_seconds: number;
+    tokens_generated?: number;
+    tokens_per_second?: number;
+  };
+}
+
 export default function OptimizePage() {
   const [optimizationData, setOptimizationData] = useState<OptimizationData | null>(null);
+  const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([]);
+  const [isRunningBenchmark, setIsRunningBenchmark] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,8 +85,46 @@ export default function OptimizePage() {
       }
     };
 
+    const fetchBenchmarks = async () => {
+      try {
+        const response = await fetch('http://localhost:8001/benchmarks');
+        if (response.ok) {
+          const data = await response.json();
+          setBenchmarkResults(data.results || []);
+        }
+      } catch {
+        // No fallback - benchmarks require local CLI
+      }
+    };
+
     fetchOptimizationData();
+    fetchBenchmarks();
   }, []);
+
+  const startBenchmark = async () => {
+    setIsRunningBenchmark(true);
+    try {
+      await fetch('http://localhost:8001/benchmark/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: "Explain quantum computing.",
+          model_name: "Current LLM",
+          quantization: "Unknown"
+        })
+      });
+      setTimeout(async () => {
+        const response = await fetch('http://localhost:8001/benchmarks');
+        if (response.ok) {
+          const data = await response.json();
+          setBenchmarkResults(data.results || []);
+        }
+        setIsRunningBenchmark(false);
+      }, 32000); // 30 seconds + 2 second buffer
+    } catch {
+      setIsRunningBenchmark(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -109,109 +166,46 @@ export default function OptimizePage() {
 
         {optimizationData && (
           <>
-            <div className="bg-gray-800 border border-gray-700 p-8 mb-8 rounded">
-              <h2 className="text-2xl font-bold text-blue-400 mb-6">System Analysis</h2>
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-white mb-2">
-                    {optimizationData.system_specs.memory_gb}GB
-                  </div>
-                  <div className="text-gray-400">System Memory</div>
-                  <div className="mt-2 text-sm text-gray-500">
-                    {optimizationData.system_specs.memory_gb >= 32 ? 'Excellent for large models' :
-                     optimizationData.system_specs.memory_gb >= 16 ? 'Good for most models' :
-                     optimizationData.system_specs.memory_gb >= 8 ? 'Limited - use quantization' :
-                     'Very limited - 4-bit models only'}
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-white mb-2">
-                    {optimizationData.system_specs.cpu_cores}
-                  </div>
-                  <div className="text-gray-400">CPU Cores</div>
-                  <div className="mt-2 text-sm text-gray-500">
-                    {optimizationData.system_specs.cpu_cores >= 8 ? 'Great for parallel processing' :
-                     optimizationData.system_specs.cpu_cores >= 4 ? 'Good for CPU inference' :
-                     'Limited processing power'}
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-white mb-2">
-                    {optimizationData.system_specs.gpu_available
-                      ? optimizationData.system_specs.gpus.length
-                      : 0}
-                  </div>
-                  <div className="text-gray-400">GPU(s) Available</div>
-                  <div className="mt-2 text-sm text-gray-500">
-                    {optimizationData.system_specs.gpu_available
-                      ? 'Hardware acceleration ready'
-                      : 'CPU-only inference'}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Cost Savings Panel */}
+            {/* Potential Savings */}
             {optimizationData.cost_savings && optimizationData.cost_savings.potential_power_savings_watts > 0 && (
-              <div className="bg-green-900 border border-green-700 p-6 mb-8 rounded">
-                <h2 className="text-xl font-bold text-green-400 mb-4">Cost Savings</h2>
-                <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-gray-800 border-l-4 border-green-500 p-6 mb-8 rounded">
+                <h2 className="text-xl font-bold text-green-400 mb-4">Potential Savings</h2>
+                <div className="grid md:grid-cols-3 gap-6 text-center">
                   <div>
-                    <div className="text-3xl font-bold text-white mb-1">
-                      {optimizationData.cost_savings.potential_power_savings_watts}W
-                    </div>
-                    <div className="text-sm text-green-300">Power Savings</div>
+                    <div className="text-2xl font-bold text-white">{optimizationData.cost_savings.potential_power_savings_watts}W</div>
+                    <div className="text-sm text-gray-400">Power Reduction</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-white mb-1">
-                      ${optimizationData.cost_savings.monthly_savings_usd}/mo
-                    </div>
-                    <div className="text-sm text-green-300">Monthly</div>
+                    <div className="text-2xl font-bold text-white">${optimizationData.cost_savings.monthly_savings_usd}/mo</div>
+                    <div className="text-sm text-gray-400">Monthly</div>
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-white mb-1">
-                      ${optimizationData.cost_savings.yearly_savings_usd}/yr
-                    </div>
-                    <div className="text-sm text-green-300">Yearly</div>
+                    <div className="text-2xl font-bold text-white">${optimizationData.cost_savings.yearly_savings_usd}/yr</div>
+                    <div className="text-sm text-gray-400">Yearly</div>
                   </div>
-                </div>
-                <div className="mt-4 text-xs text-green-300">
-                  Based on ${optimizationData.cost_savings.kwh_rate}/kWh. Your rates may vary. These are estimated savings—currently researching proper metrics across other studies.
                 </div>
               </div>
             )}
 
-            {/* Backend Recommendations */}
+            {/* Recommendations */}
             <div className="mb-12">
-              <h2 className="text-2xl font-bold text-white mb-6">Optimization Suggestions</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">Optimization Recommendations</h2>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {optimizationData.recommendations.map((rec, index) => (
-                  <div key={index} className={`border p-6 rounded ${
-                    rec.priority === 'high' ? 'bg-red-900 border-red-700' :
-                    rec.priority === 'medium' ? 'bg-yellow-900 border-yellow-700' :
-                    'bg-blue-900 border-blue-700'
+                  <div key={index} className={`bg-gray-800 border-l-4 p-4 rounded ${
+                    rec.priority === 'high' ? 'border-red-500' :
+                    rec.priority === 'medium' ? 'border-yellow-500' :
+                    'border-blue-500'
                   }`}>
-                    <h3 className={`text-xl font-bold mb-3 ${
+                    <div className={`font-bold mb-1 ${
                       rec.priority === 'high' ? 'text-red-400' :
                       rec.priority === 'medium' ? 'text-yellow-400' :
                       'text-blue-400'
-                    }`}>
-{rec.title}
-                    </h3>
-                    <p className={`mb-4 ${
-                      rec.priority === 'high' ? 'text-red-200' :
-                      rec.priority === 'medium' ? 'text-yellow-200' :
-                      'text-blue-200'
-                    }`}>
-                      {rec.description}
-                    </p>
-                    <div className="bg-gray-800 p-3 rounded">
-                      <p className="text-gray-300 text-sm">
-                        <strong>Implementation:</strong> {rec.implementation}
-                      </p>
+                    }`}>{rec.title}</div>
+                    <div className="text-sm text-gray-300 mb-2">{rec.description}</div>
+                    <div className="text-xs text-gray-400">
+                      <strong>How:</strong> {rec.implementation}
                     </div>
                   </div>
                 ))}
@@ -227,6 +221,52 @@ export default function OptimizePage() {
               </div>
             </div>
 
+            {/* Benchmark Comparison */}
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-white">Benchmark Comparison</h2>
+                <button
+                  onClick={startBenchmark}
+                  disabled={isRunningBenchmark}
+                  className={`px-4 py-2 rounded font-medium ${
+                    isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-purple-600 hover:bg-purple-500 text-white'
+                  }`}
+                >
+                  {isRunningBenchmark ? 'Running...' : 'Run Benchmark'}
+                </button>
+              </div>
+
+              {benchmarkResults.length > 0 ? (
+                <div className="bg-gray-800 border border-gray-700 rounded overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-700">
+                      <tr>
+                        <th className="text-left p-3 text-gray-300 font-medium">Model</th>
+                        <th className="text-left p-3 text-gray-300 font-medium">Quantization</th>
+                        <th className="text-right p-3 text-gray-300 font-medium">Energy (Wh)</th>
+                        <th className="text-right p-3 text-gray-300 font-medium">Avg Power (W)</th>
+                        <th className="text-right p-3 text-gray-300 font-medium">Speed (tok/s)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {benchmarkResults.map((result) => (
+                        <tr key={result.id} className="border-t border-gray-700">
+                          <td className="p-3 text-white">{result.model_name}</td>
+                          <td className="p-3 text-gray-400">{result.quantization}</td>
+                          <td className="p-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(2)}</td>
+                          <td className="p-3 text-right text-yellow-400 font-mono">{result.metrics.avg_power_watts.toFixed(1)}</td>
+                          <td className="p-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="bg-gray-800 border border-gray-700 p-8 rounded text-center text-gray-400">
+                  No benchmarks yet. Run a benchmark to compare model energy efficiency.
+                </div>
+              )}
+            </div>
 
           </>
         )}
