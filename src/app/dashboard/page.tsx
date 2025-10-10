@@ -282,19 +282,13 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-white mb-4">Getting Started</h2>
             <div className="space-y-4 text-gray-300">
               <div>
-                <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Clone the Repository</h3>
+                <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Install CLI (requires Python 3.7+)</h3>
                 <code className="bg-gray-900 px-4 py-2 rounded block">
-                  git clone https://github.com/troycallen/enviro-llm.git
+                  npx envirollm start
                 </code>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-green-400 mb-2">2. Start Monitoring Service</h3>
-                <code className="bg-gray-900 px-4 py-2 rounded block">
-                  cd enviro-llm/cli && npx tsx index.ts start
-                </code>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-yellow-400 mb-2">3. View Your Real Metrics</h3>
+                <h3 className="text-lg font-semibold text-green-400 mb-2">2. View Your Real Metrics</h3>
                 <p>Return to this dashboard to see your local system metrics in real-time.</p>
               </div>
             </div>
