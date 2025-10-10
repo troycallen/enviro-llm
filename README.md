@@ -83,12 +83,9 @@ envirollm/
 │   │   └── page.tsx       # Homepage
 │   └── components/        # Reusable React components
 │       └── NavBar.tsx     # Navigation component
-├── backend/               # Main Python FastAPI backend (production)
-│   ├── main.py           # Full API with recommendations
-│   └── requirements.txt  # Production dependencies
 ├── cli/                   # CLI tool for local monitoring
 │   ├── backend/           # Local metrics collection backend
-│   │   ├── main.py        # Lightweight metrics API
+│   │   ├── main.py        # Full API with recommendations
 │   │   └── requirements.txt
 │   ├── index.ts           # CLI source code
 │   ├── index.js           # Compiled CLI executable
