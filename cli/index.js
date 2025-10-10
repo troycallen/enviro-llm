@@ -47,17 +47,29 @@ program
     .version('1.0.0');
 // LLM process names keywords to look for
 const LLM_PROCESSES = [
-    'ollama', 'llama', 'python', 'node', 'llamacpp', 'text-generation-webui',
-    'koboldcpp', 'oobabooga', 'lmstudio', 'gpt4all'
+    'ollama', 'llama.cpp', 'llama-server', 'llamacpp', 'text-generation-webui',
+    'koboldcpp', 'oobabooga', 'lmstudio', 'gpt4all', 'localai', 'vllm',
+    'llama-cpp-python', 'transformers', 'inference'
 ];
 async function findLLMProcesses() {
     try {
         const processes = await si.processes();
-        return processes.list.filter(proc => LLM_PROCESSES.some(name => {
+        return processes.list.filter(proc => {
             var _a, _b;
-            return ((_a = proc.name) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes(name)) ||
-                ((_b = proc.command) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes(name));
-        }));
+            const procName = ((_a = proc.name) === null || _a === void 0 ? void 0 : _a.toLowerCase()) || '';
+            const procCommand = ((_b = proc.command) === null || _b === void 0 ? void 0 : _b.toLowerCase()) || '';
+            // Exclude common false positives
+            const excludePatterns = [
+                'code.exe', 'vscode', 'electron', 'chrome', 'node_modules',
+                'npm', 'npx', 'esbuild', 'webpack', 'typescript', 'tsx',
+                'postcss', 'nvidia web helper', 'discord'
+            ];
+            if (excludePatterns.some(pattern => procName.includes(pattern) || procCommand.includes(pattern))) {
+                return false;
+            }
+            // Match LLM processes
+            return LLM_PROCESSES.some(name => procName.includes(name) || procCommand.includes(name));
+        });
     }
     catch (error) {
         return [];
@@ -147,7 +159,7 @@ program
 program
     .command('start')
     .description('Start the EnviroLLM web monitoring service')
-    .option('-p, --port <port>', 'Port to run the service on', '8000')
+    .option('-p, --port <port>', 'Port to run the service on', '8001')
     .action(async (options) => {
     console.log('Starting EnviroLLM monitoring service...');
     console.log(`Local endpoint: http://localhost:${options.port}`);
@@ -194,7 +206,7 @@ program
     .command('status')
     .description('Check if EnviroLLM web service is running')
     .action(() => {
-    const req = http.get('http://localhost:8000/', (res) => {
+    const req = http.get('http://localhost:8001/', (res) => {
         console.log('EnviroLLM service is running');
         console.log('Visit: https://envirollm.com');
     });
