@@ -126,6 +126,19 @@ export default function OptimizePage() {
     }
   };
 
+  const clearBenchmarks = async () => {
+    try {
+      const response = await fetch('http://localhost:8001/benchmarks', {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        setBenchmarkResults([]);
+      }
+    } catch {
+      // Handle error silently
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-900 font-inter">
@@ -225,15 +238,25 @@ export default function OptimizePage() {
             <div className="mb-8">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-white">Benchmark Comparison</h2>
-                <button
-                  onClick={startBenchmark}
-                  disabled={isRunningBenchmark}
-                  className={`px-4 py-2 rounded font-medium ${
-                    isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-purple-600 hover:bg-purple-500 text-white'
-                  }`}
-                >
-                  {isRunningBenchmark ? 'Running...' : 'Run Benchmark'}
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={startBenchmark}
+                    disabled={isRunningBenchmark}
+                    className={`px-4 py-2 rounded font-medium ${
+                      isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-purple-600 hover:bg-purple-500 text-white'
+                    }`}
+                  >
+                    {isRunningBenchmark ? 'Running...' : 'Run Benchmark'}
+                  </button>
+                  {benchmarkResults.length > 0 && (
+                    <button
+                      onClick={clearBenchmarks}
+                      className="px-4 py-2 rounded font-medium bg-red-600 hover:bg-red-500 text-white"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
 
               {benchmarkResults.length > 0 ? (
