@@ -65,7 +65,7 @@ export default function Home() {
         <main className="grid md:grid-cols-2 gap-8">
           <div className="bg-gray-800 border border-gray-700 p-8 flex flex-col">
             <h2 className="text-2xl font-bold text-blue-400 mb-4 font-jetbrains-mono">
-              LLM MONITORING
+              SYSTEM MONITORING
             </h2>
             <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
               Track resource usage of your local LLMs with visual dashboards.
@@ -94,11 +94,11 @@ export default function Home() {
 
           <div className="bg-gray-800 border border-gray-700 p-8 flex flex-col">
             <h2 className="text-2xl font-bold text-green-400 mb-4 font-jetbrains-mono">
-              MODEL OPTIMIZATION
+              OPTIMIZATION & BENCHMARKING
             </h2>
             <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
               Analyze your system and get optimization suggestions.
-              Reduce memory usage and improve performance for your hardware.
+              Benchmark models and compare energy and cost efficiency.
             </p>
             <a
               href="/optimize"
