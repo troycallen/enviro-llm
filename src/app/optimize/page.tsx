@@ -56,6 +56,16 @@ export default function OptimizePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Load benchmarks from localStorage on mount
+    const savedBenchmarks = localStorage.getItem('envirollm_benchmarks');
+    if (savedBenchmarks) {
+      try {
+        setBenchmarkResults(JSON.parse(savedBenchmarks));
+      } catch {
+        // Invalid data, ignore
+      }
+    }
+
     const fetchOptimizationData = async () => {
       try {
         // Try local backend first
@@ -90,7 +100,9 @@ export default function OptimizePage() {
         const response = await fetch('http://localhost:8001/benchmarks');
         if (response.ok) {
           const data = await response.json();
-          setBenchmarkResults(data.results || []);
+          const results = data.results || [];
+          setBenchmarkResults(results);
+          localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
         }
       } catch {
         // No fallback - benchmarks require local CLI
@@ -117,7 +129,9 @@ export default function OptimizePage() {
         const response = await fetch('http://localhost:8001/benchmarks');
         if (response.ok) {
           const data = await response.json();
-          setBenchmarkResults(data.results || []);
+          const results = data.results || [];
+          setBenchmarkResults(results);
+          localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
         }
         setIsRunningBenchmark(false);
       }, 32000); // 30 seconds + 2 second buffer
@@ -133,6 +147,7 @@ export default function OptimizePage() {
       });
       if (response.ok) {
         setBenchmarkResults([]);
+        localStorage.removeItem('envirollm_benchmarks');
       }
     } catch {
       // Handle error silently
