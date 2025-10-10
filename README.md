@@ -33,7 +33,7 @@ Large language models are increasingly being deployed locally for privacy and ac
 
 ### CLI Tool (Quickest Way)
 
-Monitor your local system in seconds:
+Monitor your local system in one command (no installation needed):
 
 ```bash
 npx envirollm start
@@ -41,7 +41,7 @@ npx envirollm start
 
 Then visit [envirollm.com](https://envirollm.com) to view your metrics!
 
-**Requirements**: Python 3.7+ installed on your system.
+**Requirements**: Node.js and Python 3.7+ installed on your system.
 
 **Other CLI Commands**:
 ```bash

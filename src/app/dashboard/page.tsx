@@ -282,10 +282,11 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-white mb-4">Getting Started</h2>
             <div className="space-y-4 text-gray-300">
               <div>
-                <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Install CLI (requires Python 3.7+)</h3>
+                <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Run CLI (no installation needed)</h3>
                 <code className="bg-gray-900 px-4 py-2 rounded block">
                   npx envirollm start
                 </code>
+                <p className="text-sm text-gray-400 mt-2">Requirements: Node.js and Python 3.7+</p>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-green-400 mb-2">2. View Your Real Metrics</h3>

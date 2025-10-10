@@ -32,13 +32,14 @@ export default function FAQ() {
           <div className="bg-gray-800 border border-gray-700 p-6 rounded">
             <h2 className="text-2xl font-bold text-yellow-400 mb-4">How do I start?</h2>
             <div className="text-gray-300 leading-relaxed space-y-4">
-              <p>Run the monitoring CLI (requires Python 3.7+):</p>
+              <p>Run one command (no installation needed):</p>
               <div className="bg-gray-900 p-4 rounded mt-2">
                 <code className="text-green-400">
                   npx envirollm start
                 </code>
               </div>
               <p>Then visit the dashboard to see your metrics in real-time!</p>
+              <p className="text-sm text-gray-400">Requirements: Node.js and Python 3.7+</p>
             </div>
           </div>
 
