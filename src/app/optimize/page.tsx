@@ -68,14 +68,14 @@ export default function OptimizePage() {
 
     const fetchOptimizationData = async () => {
       try {
-        // Try local backend first
-        const response = await fetch('http://localhost:8000/optimize');
+        // Try local CLI backend first
+        const response = await fetch('http://localhost:8001/optimize');
 
         if (response.ok) {
           const data = await response.json();
           setOptimizationData(data);
         } else {
-          throw new Error('Local backend not responding');
+          throw new Error('Local CLI not responding');
         }
       } catch (err) {
         // Fall back to Railway demo server
@@ -88,7 +88,7 @@ export default function OptimizePage() {
             throw new Error('Demo backend not responding');
           }
         } catch {
-          setError('Unable to connect to backend. Make sure the backend is running.');
+          setError('Unable to connect to backend. Make sure the CLI is running.');
         }
       } finally {
         setIsLoading(false);

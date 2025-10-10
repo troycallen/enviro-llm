@@ -86,7 +86,7 @@ export default function Dashboard() {
       // Fetch system specs once
       const fetchSpecs = async () => {
         try {
-          const response = await fetch('http://localhost:8000/optimize');
+          const response = await fetch('http://localhost:8001/optimize');
           if (response.ok) {
             const data = await response.json();
             setSystemSpecs(data.system_specs);
