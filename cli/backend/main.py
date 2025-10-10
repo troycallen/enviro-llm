@@ -148,9 +148,10 @@ async def get_benchmarks():
 
 @app.delete("/benchmarks")
 async def clear_benchmarks():
-    """Clear all benchmark results"""
+    """Clears all benchmarked results"""
     benchmark_results.clear()
-    return {"status": "success", "message": "All benchmarks cleared"}
+    return {"status":"success", "message":"All benchmarks cleared"}
+
 
 @app.post("/benchmark/start")
 async def start_benchmark(request: BenchmarkRequest):
