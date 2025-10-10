@@ -31,46 +31,43 @@ Large language models are increasingly being deployed locally for privacy and ac
 
 ## Getting Started
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+### CLI Tool (Quickest Way)
 
-### Prerequisites
-- Node.js 18+ 
-- npm, yarn, pnpm, or bun
-
-### Installation
+Monitor your local system in seconds:
 
 ```bash
-# Clone the repository
+npx envirollm start
+```
+
+Then visit [envirollm.com](https://envirollm.com) to view your metrics!
+
+**Requirements**: Python 3.7+ installed on your system.
+
+**Other CLI Commands**:
+```bash
+npx envirollm detect    # Detect LLM processes
+npx envirollm track --auto    # Track LLM processes
+npx envirollm status    # Check if service is running
+```
+
+### Development Setup
+
+For local development of the web app:
+
+```bash
 git clone https://github.com/troycallen/envirollm
 cd envirollm
-
-# Install dependencies
 npm install
-
-# Run the development server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-### Backend & CLI Tools
-
-The project includes additional components for local monitoring:
-
-**Python Backend**
+**Backend** (for optimization recommendations):
 ```bash
 cd backend
 pip install -r requirements.txt
 python main.py
-```
-
-**CLI Tool** (for local monitoring)
-```bash
-cd cli
-npm install
-npx tsx index.ts start     # Start local monitoring service
-npx tsx index.ts detect    # Detect LLM processes
-npx tsx index.ts track --auto    # Track LLM processes
 ```
 
 ## Project Structure
