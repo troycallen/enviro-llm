@@ -1,11 +1,15 @@
 {
-  "name": "envirollm-cli",
+  "name": "envirollm",
   "version": "1.0.0",
   "description": "CLI tool for monitoring local LLM resource usage",
   "main": "index.js",
   "bin": {
     "envirollm": "./index.js"
   },
+  "files": [
+    "index.js",
+    "backend/"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "ts-node index.ts",
