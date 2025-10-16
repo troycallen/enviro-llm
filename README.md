@@ -9,10 +9,11 @@ An open-source toolkit for tracking, benchmarking, and optimizing energy and res
 Large language models are increasingly being deployed locally for privacy and accessibility reasons. However, users currently lack tools to measure or optimize their energy and resource impact. EnviroLLM aims to fill this gap by providing practical monitoring and optimization capabilities.
 
 ### Key Features
-- **Monitoring**: Track energy consumption and resource usage with visual dashboards
+- **Real-Time Monitoring**: Track energy consumption and resource usage with visual dashboards
+- **Ollama Benchmarking**: Automated energy and performance testing across different models and quantization levels
 - **CLI Tool**: Command-line interface for detecting and monitoring system stats and LLM processes
-- **Model Optimization**: Reduce energy usage through quantization, pruning, and compression recommendations
-- **Benchmarking**: Compare improvements and savings across deployments and versus cloud setups
+- **Optimization Recommendations**: Hardware-specific suggestions for reducing energy consumption
+- **Quantization Comparison**: Compare Q4, Q8, and FP16 models with real energy and performance metrics
 
 ## Technology Stack
 
@@ -47,7 +48,33 @@ Then visit [envirollm.com](https://envirollm.com) to view your metrics!
 npx envirollm detect    # Detect LLM processes
 npx envirollm track --auto    # Track LLM processes
 npx envirollm status    # Check if service is running
+npx envirollm benchmark --models llama3:8b,phi3:mini    # Benchmark Ollama models
 ```
+
+### Ollama Benchmarking
+
+Automatically measure energy consumption and performance of Ollama models:
+
+```bash
+# Install Ollama (https://ollama.com)
+ollama pull llama3:8b
+ollama pull llama3:8b-q8
+
+# Run benchmark
+npx envirollm benchmark --models llama3:8b,llama3:8b-q8
+
+# Custom prompt
+npx envirollm benchmark --models phi3:mini --prompt "Write a sorting function"
+```
+
+**Metrics collected:**
+- Energy consumption (Wh)
+- Tokens per second
+- CPU/GPU/memory usage
+- Quantization detection (Q4, Q8, FP16)
+- Actual response output (for quality comparison)
+
+See [OLLAMA_BENCHMARK.md](OLLAMA_BENCHMARK.md) for full documentation.
 
 ### Development Setup
 
