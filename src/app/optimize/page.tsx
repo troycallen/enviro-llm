@@ -63,6 +63,9 @@ export default function OptimizePage() {
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [showOllamaBenchmark, setShowOllamaBenchmark] = useState(false);
 
+  // Response preview
+  const [selectedResult, setSelectedResult] = useState<BenchmarkResult | null>(null);
+
   useEffect(() => {
     // Load benchmarks from localStorage on mount
     const savedBenchmarks = localStorage.getItem('envirollm_benchmarks');
@@ -256,33 +259,131 @@ export default function OptimizePage() {
       <div className="max-w-6xl mx-auto p-8">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">
-            System Optimization
+            Model Benchmarking
           </h1>
+          <p className="text-gray-400">Compare energy consumption and performance across models</p>
         </header>
 
-        {optimizationData && (
-          <>
-            {/* Potential Savings */}
-            {optimizationData.cost_savings && optimizationData.cost_savings.potential_power_savings_watts > 0 && (
-              <div className="bg-gray-800 border-l-4 border-green-500 p-6 mb-8 rounded">
-                <h2 className="text-xl font-bold text-green-400 mb-4">Potential Savings</h2>
-                <div className="grid md:grid-cols-3 gap-6 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-white">{optimizationData.cost_savings.potential_power_savings_watts}W</div>
-                    <div className="text-sm text-gray-400">Power Reduction</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-white">${optimizationData.cost_savings.monthly_savings_usd}/mo</div>
-                    <div className="text-sm text-gray-400">Monthly</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-white">${optimizationData.cost_savings.yearly_savings_usd}/yr</div>
-                    <div className="text-sm text-gray-400">Yearly</div>
-                  </div>
+        {/* Ollama Benchmarking Hero Section */}
+        <div className="mb-8">
+          {ollamaAvailable ? (
+            <div className="bg-green-900 border border-green-700 p-6 rounded">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-green-400 mb-1">Ollama Detected</h2>
+                  <p className="text-green-200">{ollamaModels.length} models available for automated testing</p>
                 </div>
+                <button
+                  onClick={() => setShowOllamaBenchmark(true)}
+                  disabled={isRunningBenchmark}
+                  className={`px-6 py-3 rounded font-bold text-lg ${
+                    isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-green-600 hover:bg-green-500 text-white'
+                  }`}
+                >
+                  {isRunningBenchmark ? 'Running...' : 'Start Benchmark'}
+                </button>
               </div>
-            )}
+            </div>
+          ) : (
+            <div className="bg-gray-800 border border-gray-700 p-6 rounded">
+              <h2 className="text-xl font-bold text-white mb-2">Install Ollama for Automated Benchmarking</h2>
+              <p className="text-gray-300 mb-3">Ollama enables automated energy and performance comparison across models.</p>
+              <a
+                href="https://ollama.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 font-semibold"
+              >
+                Get Ollama →
+              </a>
+            </div>
+          )}
+        </div>
 
+        {/* Benchmark Results */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-white">Benchmark Results</h2>
+            <div className="flex gap-3">
+              <button
+                onClick={startBenchmark}
+                disabled={isRunningBenchmark}
+                className={`px-4 py-2 rounded font-medium ${
+                  isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-purple-600 hover:bg-purple-500 text-white'
+                }`}
+              >
+                {isRunningBenchmark ? 'Running...' : 'Manual Benchmark'}
+              </button>
+              {benchmarkResults.length > 0 && (
+                <button
+                  onClick={clearBenchmarks}
+                  className="px-4 py-2 rounded font-medium bg-red-600 hover:bg-red-500 text-white"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+          </div>
+
+          {benchmarkResults.length > 0 ? (
+            <div className="bg-gray-800 border border-gray-700 rounded overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-700">
+                  <tr>
+                    <th className="text-left p-3 text-gray-300 font-medium">Model</th>
+                    <th className="text-left p-3 text-gray-300 font-medium">Quantization</th>
+                    <th className="text-right p-3 text-gray-300 font-medium">Energy (Wh)</th>
+                    <th className="text-right p-3 text-gray-300 font-medium">Wh/Token</th>
+                    <th className="text-right p-3 text-gray-300 font-medium">Speed (tok/s)</th>
+                    <th className="text-right p-3 text-gray-300 font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {benchmarkResults.map((result) => {
+                    const whPerToken = result.metrics.tokens_generated
+                      ? (result.metrics.total_energy_wh / result.metrics.tokens_generated).toFixed(6)
+                      : 'N/A';
+
+                    return (
+                      <tr key={result.id} className="border-t border-gray-700 hover:bg-gray-750">
+                        <td className="p-3 text-white">{result.model_name}</td>
+                        <td className="p-3 text-gray-400">{result.quantization}</td>
+                        <td className="p-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
+                        <td className="p-3 text-right text-blue-400 font-mono text-xs">{whPerToken}</td>
+                        <td className="p-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
+                        <td className="p-3 text-right">
+                          {result.response && (
+                            <button
+                              onClick={() => setSelectedResult(result)}
+                              className="text-blue-400 hover:text-blue-300 text-xs"
+                            >
+                              View Response
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="bg-gray-800 border border-gray-700 p-8 rounded text-center text-gray-400">
+              <p className="mb-2">No benchmarks yet. Start a benchmark to compare model energy efficiency.</p>
+              {!ollamaAvailable && (
+                <p className="text-sm">Install Ollama to enable automated benchmarking.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* System Optimization - Collapsible */}
+        {optimizationData && (
+          <details className="mb-8">
+            <summary className="cursor-pointer bg-gray-800 border border-gray-700 p-4 rounded font-bold text-xl text-white hover:bg-gray-750">
+              System Optimization Recommendations
+            </summary>
+            <div className="mt-4">
             {/* Recommendations */}
             <div className="mb-12">
               <h2 className="text-2xl font-bold text-white mb-4">Optimization Recommendations</h2>
@@ -316,76 +417,49 @@ export default function OptimizePage() {
                 )}
               </div>
             </div>
+          </div>
+          </details>
+        )}
 
-            {/* Benchmark Comparison */}
-            <div className="mb-8">
+        {/* Response Preview Modal */}
+        {selectedResult && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-white">Benchmark Comparison</h2>
-                <div className="flex gap-3">
-                  {ollamaAvailable && (
-                    <button
-                      onClick={() => setShowOllamaBenchmark(true)}
-                      disabled={isRunningBenchmark}
-                      className={`px-4 py-2 rounded font-medium ${
-                        isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-green-600 hover:bg-green-500 text-white'
-                      }`}
-                    >
-                      Ollama Benchmark
-                    </button>
-                  )}
-                  <button
-                    onClick={startBenchmark}
-                    disabled={isRunningBenchmark}
-                    className={`px-4 py-2 rounded font-medium ${
-                      isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-purple-600 hover:bg-purple-500 text-white'
-                    }`}
-                  >
-                    {isRunningBenchmark ? 'Running...' : 'Manual Benchmark'}
-                  </button>
-                  {benchmarkResults.length > 0 && (
-                    <button
-                      onClick={clearBenchmarks}
-                      className="px-4 py-2 rounded font-medium bg-red-600 hover:bg-red-500 text-white"
-                    >
-                      Clear
-                    </button>
-                  )}
+                <h3 className="text-2xl font-bold text-white">{selectedResult.model_name}</h3>
+                <button
+                  onClick={() => setSelectedResult(null)}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Quantization:</span>
+                  <span className="text-white ml-2">{selectedResult.quantization}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Energy:</span>
+                  <span className="text-green-400 ml-2 font-mono">{selectedResult.metrics.total_energy_wh.toFixed(4)} Wh</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Speed:</span>
+                  <span className="text-purple-400 ml-2 font-mono">{selectedResult.metrics.tokens_per_second?.toFixed(1) || 'N/A'} tok/s</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Tokens:</span>
+                  <span className="text-white ml-2">{selectedResult.metrics.tokens_generated || 'N/A'}</span>
                 </div>
               </div>
 
-              {benchmarkResults.length > 0 ? (
-                <div className="bg-gray-800 border border-gray-700 rounded overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-700">
-                      <tr>
-                        <th className="text-left p-3 text-gray-300 font-medium">Model</th>
-                        <th className="text-left p-3 text-gray-300 font-medium">Quantization</th>
-                        <th className="text-right p-3 text-gray-300 font-medium">Energy (Wh)</th>
-                        <th className="text-right p-3 text-gray-300 font-medium">Avg Power (W)</th>
-                        <th className="text-right p-3 text-gray-300 font-medium">Speed (tok/s)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {benchmarkResults.map((result) => (
-                        <tr key={result.id} className="border-t border-gray-700">
-                          <td className="p-3 text-white">{result.model_name}</td>
-                          <td className="p-3 text-gray-400">{result.quantization}</td>
-                          <td className="p-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(2)}</td>
-                          <td className="p-3 text-right text-yellow-400 font-mono">{result.metrics.avg_power_watts.toFixed(1)}</td>
-                          <td className="p-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="bg-gray-800 border border-gray-700 p-8 rounded text-center text-gray-400">
-                  No benchmarks yet. Run a benchmark to compare model energy efficiency.
-                </div>
-              )}
+              <div className="bg-gray-900 border border-gray-700 p-4 rounded">
+                <h4 className="text-white font-semibold mb-2">Response:</h4>
+                <p className="text-gray-300 whitespace-pre-wrap">{selectedResult.response || 'No response captured'}</p>
+              </div>
             </div>
-
-          </>
+          </div>
         )}
 
         {/* Ollama Benchmark Modal */}
