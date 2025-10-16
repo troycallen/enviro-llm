@@ -36,6 +36,7 @@ interface BenchmarkResult {
   model_name: string;
   quantization: string;
   timestamp: string;
+  status?: string;
   metrics: {
     avg_cpu_usage: number;
     avg_memory_usage: number;
@@ -46,6 +47,7 @@ interface BenchmarkResult {
     tokens_generated?: number;
     tokens_per_second?: number;
   };
+  response?: string;
 }
 
 export default function OptimizePage() {
@@ -54,6 +56,12 @@ export default function OptimizePage() {
   const [isRunningBenchmark, setIsRunningBenchmark] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Ollama state
+  const [ollamaAvailable, setOllamaAvailable] = useState(false);
+  const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+  const [selectedModels, setSelectedModels] = useState<string[]>([]);
+  const [showOllamaBenchmark, setShowOllamaBenchmark] = useState(false);
 
   useEffect(() => {
     // Load benchmarks from localStorage on mount
@@ -111,6 +119,21 @@ export default function OptimizePage() {
 
     fetchOptimizationData();
     fetchBenchmarks();
+
+    // Check Ollama status
+    const checkOllama = async () => {
+      try {
+        const response = await fetch('http://localhost:8001/ollama/status');
+        if (response.ok) {
+          const data = await response.json();
+          setOllamaAvailable(data.available);
+          setOllamaModels(data.models || []);
+        }
+      } catch {
+        setOllamaAvailable(false);
+      }
+    };
+    checkOllama();
   }, []);
 
   const startBenchmark = async () => {
@@ -151,6 +174,51 @@ export default function OptimizePage() {
       }
     } catch {
       // Handle error silently
+    }
+  };
+
+  const runOllamaBenchmark = async () => {
+    if (selectedModels.length === 0) {
+      alert('Please select at least one model');
+      return;
+    }
+
+    setIsRunningBenchmark(true);
+    try {
+      const response = await fetch('http://localhost:8001/ollama/benchmark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          models: selectedModels,
+          prompt: "Explain quantum computing in simple terms."
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh benchmarks
+        const benchmarksRes = await fetch('http://localhost:8001/benchmarks');
+        if (benchmarksRes.ok) {
+          const benchData = await benchmarksRes.json();
+          const results = benchData.results || [];
+          setBenchmarkResults(results);
+          localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
+        }
+      }
+    } catch (err) {
+      console.error('Benchmark failed:', err);
+    } finally {
+      setIsRunningBenchmark(false);
+      setShowOllamaBenchmark(false);
+      setSelectedModels([]);
+    }
+  };
+
+  const toggleModelSelection = (model: string) => {
+    if (selectedModels.includes(model)) {
+      setSelectedModels(selectedModels.filter(m => m !== model));
+    } else {
+      setSelectedModels([...selectedModels, model]);
     }
   };
 
@@ -254,6 +322,17 @@ export default function OptimizePage() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-white">Benchmark Comparison</h2>
                 <div className="flex gap-3">
+                  {ollamaAvailable && (
+                    <button
+                      onClick={() => setShowOllamaBenchmark(true)}
+                      disabled={isRunningBenchmark}
+                      className={`px-4 py-2 rounded font-medium ${
+                        isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-green-600 hover:bg-green-500 text-white'
+                      }`}
+                    >
+                      Ollama Benchmark
+                    </button>
+                  )}
                   <button
                     onClick={startBenchmark}
                     disabled={isRunningBenchmark}
@@ -261,7 +340,7 @@ export default function OptimizePage() {
                       isRunningBenchmark ? 'bg-gray-600 text-gray-400' : 'bg-purple-600 hover:bg-purple-500 text-white'
                     }`}
                   >
-                    {isRunningBenchmark ? 'Running...' : 'Run Benchmark'}
+                    {isRunningBenchmark ? 'Running...' : 'Manual Benchmark'}
                   </button>
                   {benchmarkResults.length > 0 && (
                     <button
@@ -307,6 +386,88 @@ export default function OptimizePage() {
             </div>
 
           </>
+        )}
+
+        {/* Ollama Benchmark Modal */}
+        {showOllamaBenchmark && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-2xl w-full mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-white">Ollama Automated Benchmark</h3>
+                <button
+                  onClick={() => setShowOllamaBenchmark(false)}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <p className="text-gray-300 mb-4">
+                Select models to benchmark. The system will automatically run inference and measure energy consumption.
+              </p>
+
+              {ollamaModels.length === 0 ? (
+                <div className="bg-yellow-900 border border-yellow-700 p-4 rounded mb-4">
+                  <p className="text-yellow-200">
+                    No Ollama models found. Pull a model first:
+                  </p>
+                  <code className="block bg-gray-900 text-white p-2 mt-2 rounded">
+                    ollama pull llama3:8b
+                  </code>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <h4 className="text-white font-semibold mb-2">Available Models ({ollamaModels.length})</h4>
+                    <div className="max-h-60 overflow-y-auto bg-gray-900 border border-gray-700 rounded p-3">
+                      {ollamaModels.map(model => (
+                        <label key={model} className="flex items-center gap-3 py-2 hover:bg-gray-800 px-2 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedModels.includes(model)}
+                            onChange={() => toggleModelSelection(model)}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-gray-200">{model}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-900 border border-blue-700 p-3 rounded mb-4">
+                    <p className="text-blue-200 text-sm">
+                      <strong>Selected:</strong> {selectedModels.length} model{selectedModels.length !== 1 ? 's' : ''}
+                      {selectedModels.length > 0 && (
+                        <span className="block mt-1">
+                          {selectedModels.join(', ')}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      onClick={() => setShowOllamaBenchmark(false)}
+                      className="px-4 py-2 rounded font-medium bg-gray-700 hover:bg-gray-600 text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={runOllamaBenchmark}
+                      disabled={selectedModels.length === 0 || isRunningBenchmark}
+                      className={`px-4 py-2 rounded font-medium ${
+                        selectedModels.length === 0 || isRunningBenchmark
+                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                          : 'bg-green-600 hover:bg-green-500 text-white'
+                      }`}
+                    >
+                      {isRunningBenchmark ? 'Running Benchmark...' : 'Start Benchmark'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
