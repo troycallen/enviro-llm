@@ -104,7 +104,7 @@ export default function Home() {
               href="/optimize"
               className="inline-block bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium w-fit"
             >
-              Get Recommendations
+              Benchmark & Get Recommendations
             </a>
           </div>
         </main>
