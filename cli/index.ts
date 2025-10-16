@@ -212,4 +212,130 @@ program
     });
   });
 
+program
+  .command('benchmark')
+  .description('Run automated Ollama benchmarks')
+  .option('-m, --models <models>', 'Comma-separated list of models (e.g., llama3:8b,phi3:mini)')
+  .option('-p, --prompt <prompt>', 'Custom prompt for benchmarking', 'Explain quantum computing in simple terms.')
+  .action(async (options) => {
+    console.log(chalk.bold.cyan('\nEnviroLLM Ollama Benchmark\n'));
+
+    // Check if backend is running
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const req = http.get('http://localhost:8001/', (res) => resolve());
+        req.on('error', () => reject());
+      });
+    } catch {
+      console.error(chalk.red('Error: EnviroLLM backend is not running'));
+      console.log('Run: envirollm start');
+      process.exit(1);
+    }
+
+    // Check if Ollama is available
+    const ollamaStatusReq = http.request({
+      hostname: 'localhost',
+      port: 8001,
+      path: '/ollama/status',
+      method: 'GET'
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', async () => {
+        const status = JSON.parse(data);
+
+        if (!status.available) {
+          console.error(chalk.red('Error: Ollama is not running'));
+          console.log('Start Ollama first: ollama serve');
+          process.exit(1);
+        }
+
+        console.log(chalk.green(`✓ Ollama detected with ${status.model_count} models available\n`));
+
+        let modelsToTest: string[] = [];
+
+        if (options.models) {
+          modelsToTest = options.models.split(',').map((m: string) => m.trim());
+        } else {
+          // Show available models
+          console.log('Available models:');
+          status.models.forEach((model: string, i: number) => {
+            console.log(`  ${i + 1}. ${model}`);
+          });
+
+          if (status.models.length === 0) {
+            console.error(chalk.red('\nNo models found. Pull a model first:'));
+            console.log('  ollama pull llama3:8b');
+            process.exit(1);
+          }
+
+          console.log(chalk.yellow('\nNo models specified. Use --models flag:'));
+          console.log('  envirollm benchmark --models llama3:8b,phi3:mini');
+          process.exit(0);
+        }
+
+        console.log(chalk.bold('Models to benchmark:'));
+        modelsToTest.forEach(model => console.log(`  • ${model}`));
+        console.log(`\nPrompt: "${options.prompt}"\n`);
+
+        // Run benchmark
+        const postData = JSON.stringify({
+          models: modelsToTest,
+          prompt: options.prompt
+        });
+
+        const benchmarkReq = http.request({
+          hostname: 'localhost',
+          port: 8001,
+          path: '/ollama/benchmark',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+          }
+        }, (res) => {
+          let responseData = '';
+          res.on('data', chunk => responseData += chunk);
+          res.on('end', () => {
+            const result = JSON.parse(responseData);
+
+            console.log(chalk.bold.green('\n✓ Benchmark Complete!\n'));
+            console.log(chalk.bold('Results:\n'));
+
+            result.results.forEach((r: any) => {
+              if (r.status === 'failed') {
+                console.log(chalk.red(`✗ ${r.model_name} - FAILED`));
+                console.log(`  Error: ${r.error}\n`);
+              } else {
+                console.log(chalk.cyan(`${r.model_name} (${r.quantization})`));
+                console.log(`  Energy: ${chalk.yellow(r.metrics.total_energy_wh.toFixed(4))} Wh`);
+                console.log(`  Power: ${r.metrics.avg_power_watts}W`);
+                console.log(`  Speed: ${r.metrics.tokens_per_second || 'N/A'} tok/s`);
+                console.log(`  Tokens: ${r.metrics.tokens_generated} generated`);
+                console.log(`  Duration: ${r.metrics.duration_seconds}s\n`);
+              }
+            });
+
+            console.log(chalk.gray('View detailed results at: https://envirollm.com/optimize'));
+          });
+        });
+
+        benchmarkReq.on('error', (err) => {
+          console.error(chalk.red('Benchmark failed:', err.message));
+          process.exit(1);
+        });
+
+        benchmarkReq.write(postData);
+        benchmarkReq.end();
+      });
+    });
+
+    ollamaStatusReq.on('error', (err) => {
+      console.error(chalk.red('Failed to connect to backend:', err.message));
+      process.exit(1);
+    });
+
+    ollamaStatusReq.end();
+  });
+
 program.parse();
