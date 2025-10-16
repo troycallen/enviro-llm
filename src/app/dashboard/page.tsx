@@ -35,12 +35,20 @@ interface SystemSpecs {
   }>;
 }
 
+interface CostSavings {
+  potential_power_savings_watts: number;
+  monthly_savings_usd: number;
+  yearly_savings_usd: number;
+  kwh_rate: number;
+}
+
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPowerInfo, setShowPowerInfo] = useState(false);
   const [systemSpecs, setSystemSpecs] = useState<SystemSpecs | null>(null);
+  const [costSavings, setCostSavings] = useState<CostSavings | null>(null);
 
   useEffect(() => {
     localStorage.setItem('hasVisitedDashboard', 'true');
@@ -83,13 +91,14 @@ export default function Dashboard() {
       fetchMetrics();
       const interval = setInterval(fetchMetrics, 2000);
 
-      // Fetch system specs once
+      // Fetch system specs and cost savings once
       const fetchSpecs = async () => {
         try {
           const response = await fetch('http://localhost:8001/optimize');
           if (response.ok) {
             const data = await response.json();
             setSystemSpecs(data.system_specs);
+            setCostSavings(data.cost_savings);
           }
         } catch {
           try {
@@ -97,6 +106,7 @@ export default function Dashboard() {
             if (response.ok) {
               const data = await response.json();
               setSystemSpecs(data.system_specs);
+              setCostSavings(data.cost_savings);
             }
           } catch {}
         }
@@ -254,6 +264,27 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Potential Savings */}
+        {costSavings && costSavings.potential_power_savings_watts > 0 && (
+          <div className="bg-gray-800 border-l-4 border-green-500 p-6 mb-8 rounded">
+            <h2 className="text-xl font-bold text-green-400 mb-4">Potential Savings</h2>
+            <div className="grid md:grid-cols-3 gap-6 text-center">
+              <div>
+                <div className="text-2xl font-bold text-white">{costSavings.potential_power_savings_watts}W</div>
+                <div className="text-sm text-gray-400">Power Reduction</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-white">${costSavings.monthly_savings_usd}/mo</div>
+                <div className="text-sm text-gray-400">Monthly</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-white">${costSavings.yearly_savings_usd}/yr</div>
+                <div className="text-sm text-gray-400">Yearly</div>
+              </div>
             </div>
           </div>
         )}
