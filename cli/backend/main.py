@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import psutil
@@ -7,6 +7,8 @@ import os
 from datetime import datetime
 import time
 import uuid
+import httpx
+from typing import List, Optional
 try:
     import pynvml
     NVIDIA_AVAILABLE = True
@@ -22,6 +24,90 @@ class BenchmarkRequest(BaseModel):
     prompt: str
     model_name: str = "Unknown Model"
     quantization: str = "Unknown"
+
+class OllamaBenchmarkRequest(BaseModel):
+    models: List[str]  # e.g., ["llama3:8b", "phi3:mini"]
+    prompt: str = "Explain quantum computing in simple terms."
+
+# Ollama API base URL
+OLLAMA_API_URL = "http://localhost:11434"
+
+async def check_ollama_available():
+    """Check if Ollama is running"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{OLLAMA_API_URL}/api/tags", timeout=2.0)
+            return response.status_code == 200
+    except:
+        return False
+
+async def get_ollama_models():
+    """Get list of available Ollama models"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"{OLLAMA_API_URL}/api/tags", timeout=5.0)
+            if response.status_code == 200:
+                data = response.json()
+                return [model["name"] for model in data.get("models", [])]
+    except:
+        pass
+    return []
+
+async def run_ollama_inference(model: str, prompt: str):
+    """Run inference with Ollama and return response with token counts"""
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            start_time = time.time()
+
+            response = await client.post(
+                f"{OLLAMA_API_URL}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": False
+                }
+            )
+
+            end_time = time.time()
+
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    "success": True,
+                    "response": data.get("response", ""),
+                    "prompt_tokens": data.get("prompt_eval_count", 0),
+                    "response_tokens": data.get("eval_count", 0),
+                    "total_tokens": data.get("prompt_eval_count", 0) + data.get("eval_count", 0),
+                    "duration_seconds": end_time - start_time,
+                    "model": data.get("model", model)
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"HTTP {response.status_code}"
+                }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+def extract_quantization_from_model(model_name: str) -> str:
+    """Extract quantization level from Ollama model name"""
+    model_lower = model_name.lower()
+
+    if "q4" in model_lower or ":4" in model_lower:
+        return "Q4 (4-bit)"
+    elif "q8" in model_lower or ":8" in model_lower:
+        return "Q8 (8-bit)"
+    elif "fp16" in model_lower or "16bit" in model_lower:
+        return "FP16 (16-bit)"
+    elif "q5" in model_lower:
+        return "Q5 (5-bit)"
+    elif "q6" in model_lower:
+        return "Q6 (6-bit)"
+    else:
+        return "Q4 (4-bit default)"
 
 def get_gpu_info():
     gpu_info = {"available": False, "gpus": []}
@@ -317,6 +403,119 @@ async def start_benchmark(request: BenchmarkRequest):
     return {
         "status": "completed",
         "result": result
+    }
+
+@app.get("/ollama/status")
+async def ollama_status():
+    """Check if Ollama is available"""
+    is_available = await check_ollama_available()
+    models = []
+
+    if is_available:
+        models = await get_ollama_models()
+
+    return {
+        "available": is_available,
+        "models": models,
+        "model_count": len(models)
+    }
+
+@app.post("/ollama/benchmark")
+async def ollama_benchmark(request: OllamaBenchmarkRequest):
+    """
+    Automated benchmarking with Ollama.
+    Runs inference with specified models and measures energy/performance.
+    """
+    # Check if Ollama is running
+    if not await check_ollama_available():
+        raise HTTPException(status_code=503, error="Ollama is not running. Start Ollama first.")
+
+    results = []
+
+    for model in request.models:
+        print(f"Benchmarking {model}...")
+
+        # Initialize monitoring
+        cpu_readings = []
+        memory_readings = []
+        power_readings = []
+
+        # Start inference in background and monitor
+        inference_start = time.time()
+
+        # Run Ollama inference
+        inference_result = await run_ollama_inference(model, request.prompt)
+
+        inference_end = time.time()
+        inference_duration = inference_end - inference_start
+
+        # Might swap to full implementation parallel with inference in future
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory_percent = psutil.virtual_memory().percent
+        gpu_info = get_gpu_info()
+
+        # Calculate power
+        base_power = 50
+        cpu_power = cpu_percent * 2
+        gpu_power = 0
+        if gpu_info["available"] and gpu_info["gpus"]:
+            gpu_power = sum(gpu["power_watts"] for gpu in gpu_info["gpus"])
+        avg_power = base_power + cpu_power + gpu_power
+
+        # Calculate energy (Power * Time / 3600 to get Wh)
+        total_energy_wh = (avg_power * inference_duration) / 3600
+
+        # Get memory info
+        memory_info = psutil.virtual_memory()
+        peak_memory_gb = (memory_info.used) / (1024**3)
+
+        if not inference_result["success"]:
+            # Model failed to run
+            result = {
+                "id": str(uuid.uuid4()),
+                "model_name": model,
+                "quantization": extract_quantization_from_model(model),
+                "timestamp": datetime.now().isoformat(),
+                "status": "failed",
+                "error": inference_result.get("error", "Unknown error"),
+                "prompt": request.prompt
+            }
+        else:
+            # Calculate tokens per second
+            tokens_per_second = None
+            if inference_result["response_tokens"] > 0 and inference_duration > 0:
+                tokens_per_second = inference_result["response_tokens"] / inference_duration
+
+            result = {
+                "id": str(uuid.uuid4()),
+                "model_name": model,
+                "quantization": extract_quantization_from_model(model),
+                "timestamp": datetime.now().isoformat(),
+                "status": "completed",
+                "metrics": {
+                    "avg_cpu_usage": round(cpu_percent, 1),
+                    "avg_memory_usage": round(memory_percent, 1),
+                    "avg_power_watts": round(avg_power, 1),
+                    "peak_memory_gb": round(peak_memory_gb, 2),
+                    "total_energy_wh": round(total_energy_wh, 4),
+                    "duration_seconds": round(inference_duration, 2),
+                    "tokens_generated": inference_result["response_tokens"],
+                    "tokens_per_second": round(tokens_per_second, 1) if tokens_per_second else None,
+                    "prompt_tokens": inference_result["prompt_tokens"],
+                    "total_tokens": inference_result["total_tokens"]
+                },
+                "prompt": request.prompt,
+                "response": inference_result["response"][:200] + "..." if len(inference_result["response"]) > 200 else inference_result["response"]
+            }
+
+        # Store result
+        benchmark_results.append(result)
+        results.append(result)
+
+    return {
+        "status": "completed",
+        "benchmarks_run": len(results),
+        "results": results
     }
 
 if __name__ == "__main__":
