@@ -29,6 +29,12 @@ class OllamaBenchmarkRequest(BaseModel):
     models: List[str]  # e.g., ["llama3:8b", "phi3:mini"]
     prompt: str = "Explain quantum computing in simple terms."
 
+class OpenAIBenchmarkRequest(BaseModel):
+    base_url: str  # e.g., "http://localhost:1234/v1" for LM Studio
+    model: str  # e.g., "llama-3-8b"
+    prompt: str = "Explain quantum computing in simple terms."
+    api_key: Optional[str] = None  
+
 # Ollama API base URL
 OLLAMA_API_URL = "http://localhost:11434"
 
@@ -85,6 +91,53 @@ async def run_ollama_inference(model: str, prompt: str):
                 return {
                     "success": False,
                     "error": f"HTTP {response.status_code}"
+                }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+async def run_openai_inference(base_url: str, model: str, prompt: str, api_key: Optional[str] = None):
+    """Run inference with OpenAI-compatible API and return response with token counts"""
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            start_time = time.time()
+
+            headers = {"Content-Type": "application/json"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+            response = await client.post(
+                f"{base_url}/chat/completions",
+                headers=headers,
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False
+                }
+            )
+
+            end_time = time.time()
+
+            if response.status_code == 200:
+                data = response.json()
+                usage = data.get("usage", {})
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+
+                return {
+                    "success": True,
+                    "response": content,
+                    "prompt_tokens": usage.get("prompt_tokens", 0),
+                    "response_tokens": usage.get("completion_tokens", 0),
+                    "total_tokens": usage.get("total_tokens", 0),
+                    "duration_seconds": end_time - start_time,
+                    "model": model
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"HTTP {response.status_code}: {response.text}"
                 }
     except Exception as e:
         return {
@@ -384,6 +437,7 @@ async def start_benchmark(request: BenchmarkRequest):
         "model_name": request.model_name,
         "quantization": request.quantization,
         "timestamp": datetime.now().isoformat(),
+        "source": "manual",
         "metrics": {
             "avg_cpu_usage": round(avg_cpu, 1),
             "avg_memory_usage": round(avg_memory, 1),
@@ -418,6 +472,31 @@ async def ollama_status():
         "available": is_available,
         "models": models,
         "model_count": len(models)
+    }
+
+@app.get("/lmstudio/status")
+async def lmstudio_status():
+    """Check if LM Studio is available and get models"""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get("http://localhost:1234/v1/models")
+            if response.status_code == 200:
+                data = response.json()
+                models = [model["id"] for model in data.get("data", [])]
+                return {
+                    "available": True,
+                    "models": models,
+                    "model_count": len(models),
+                    "base_url": "http://localhost:1234/v1"
+                }
+    except Exception:
+        pass
+
+    return {
+        "available": False,
+        "models": [],
+        "model_count": 0,
+        "base_url": "http://localhost:1234/v1"
     }
 
 @app.post("/ollama/benchmark")
@@ -477,6 +556,7 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
                 "quantization": extract_quantization_from_model(model),
                 "timestamp": datetime.now().isoformat(),
                 "status": "failed",
+                "source": "ollama",
                 "error": inference_result.get("error", "Unknown error"),
                 "prompt": request.prompt
             }
@@ -492,6 +572,7 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
                 "quantization": extract_quantization_from_model(model),
                 "timestamp": datetime.now().isoformat(),
                 "status": "completed",
+                "source": "ollama",
                 "metrics": {
                     "avg_cpu_usage": round(cpu_percent, 1),
                     "avg_memory_usage": round(memory_percent, 1),
@@ -516,6 +597,85 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
         "status": "completed",
         "benchmarks_run": len(results),
         "results": results
+    }
+
+@app.post("/openai/benchmark")
+async def openai_benchmark(request: OpenAIBenchmarkRequest):
+    """
+    Automated benchmarking with OpenAI-compatible APIs.
+    Works with LM Studio, text-generation-webui, vLLM, and other OpenAI-compatible endpoints.
+    """
+    print(f"Benchmarking {request.model} at {request.base_url}...")
+
+    # Run inference
+    inference_start = time.time()
+    inference_result = await run_openai_inference(request.base_url, request.model, request.prompt, request.api_key)
+    inference_end = time.time()
+    inference_duration = inference_end - inference_start
+
+    # Get system metrics snapshot
+    cpu_percent = psutil.cpu_percent(interval=1)
+    memory_percent = psutil.virtual_memory().percent
+    gpu_info = get_gpu_info()
+
+    # Calculate power
+    base_power = 50
+    cpu_power = cpu_percent * 2
+    gpu_power = 0
+    if gpu_info["available"] and gpu_info["gpus"]:
+        gpu_power = sum(gpu["power_watts"] for gpu in gpu_info["gpus"])
+    avg_power = base_power + cpu_power + gpu_power
+
+    total_energy_wh = (avg_power * inference_duration) / 3600
+    memory_info = psutil.virtual_memory()
+    peak_memory_gb = (memory_info.used) / (1024**3)
+
+    if not inference_result["success"]:
+        # Model failed to run
+        result = {
+            "id": str(uuid.uuid4()),
+            "model_name": f"{request.model} (OpenAI API)",
+            "quantization": extract_quantization_from_model(request.model),
+            "timestamp": datetime.now().isoformat(),
+            "status": "failed",
+            "source": "openai",
+            "error": inference_result.get("error", "Unknown error"),
+            "prompt": request.prompt
+        }
+    else:
+        # Calculate tokens per second
+        tokens_per_second = None
+        if inference_result["response_tokens"] > 0 and inference_duration > 0:
+            tokens_per_second = inference_result["response_tokens"] / inference_duration
+
+        result = {
+            "id": str(uuid.uuid4()),
+            "model_name": f"{request.model} (OpenAI API)",
+            "quantization": extract_quantization_from_model(request.model),
+            "timestamp": datetime.now().isoformat(),
+            "status": "completed",
+            "source": "openai",
+            "metrics": {
+                "avg_cpu_usage": round(cpu_percent, 1),
+                "avg_memory_usage": round(memory_percent, 1),
+                "avg_power_watts": round(avg_power, 1),
+                "peak_memory_gb": round(peak_memory_gb, 2),
+                "total_energy_wh": round(total_energy_wh, 4),
+                "duration_seconds": round(inference_duration, 2),
+                "tokens_generated": inference_result["response_tokens"],
+                "tokens_per_second": round(tokens_per_second, 1) if tokens_per_second else None,
+                "prompt_tokens": inference_result["prompt_tokens"],
+                "total_tokens": inference_result["total_tokens"]
+            },
+            "prompt": request.prompt,
+            "response": inference_result["response"][:200] + "..." if len(inference_result["response"]) > 200 else inference_result["response"]
+        }
+
+    benchmark_results.append(result)
+
+    return {
+        "status": "completed",
+        "result": result
     }
 
 if __name__ == "__main__":
