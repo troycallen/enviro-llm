@@ -338,4 +338,90 @@ program
     ollamaStatusReq.end();
   });
 
+program
+  .command('benchmark-openai')
+  .description('Benchmark OpenAI-compatible API (LM Studio, text-gen-webui, vLLM, etc.)')
+  .requiredOption('-u, --url <url>', 'Base URL of the API (e.g., http://localhost:1234/v1)')
+  .requiredOption('-m, --model <model>', 'Model name (e.g., llama-3-8b)')
+  .option('-p, --prompt <prompt>', 'Custom prompt for benchmarking', 'Explain quantum computing in simple terms.')
+  .option('-k, --api-key <key>', 'API key (optional)')
+  .action(async (options) => {
+    console.log(chalk.bold.cyan('\nEnviroLLM OpenAI API Benchmark\n'));
+
+    // Check if backend is running
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const req = http.get('http://localhost:8001/', (res) => resolve());
+        req.on('error', () => reject());
+      });
+    } catch {
+      console.error(chalk.red('Error: EnviroLLM backend is not running'));
+      console.log('Run: envirollm start');
+      process.exit(1);
+    }
+
+    console.log(chalk.bold('Configuration:'));
+    console.log(`  API URL: ${options.url}`);
+    console.log(`  Model: ${options.model}`);
+    console.log(`  Prompt: "${options.prompt}"\n`);
+
+    // Run benchmark
+    const postData = JSON.stringify({
+      base_url: options.url,
+      model: options.model,
+      prompt: options.prompt,
+      api_key: options.apiKey || null
+    });
+
+    const benchmarkReq = http.request({
+      hostname: 'localhost',
+      port: 8001,
+      path: '/openai/benchmark',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      }
+    }, (res) => {
+      let responseData = '';
+      res.on('data', chunk => responseData += chunk);
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(responseData);
+
+          if (result.status === 'completed') {
+            const r = result.result;
+
+            if (r.status === 'failed') {
+              console.log(chalk.red(`✗ ${r.model_name} - FAILED`));
+              console.log(`  Error: ${r.error}\n`);
+            } else {
+              console.log(chalk.bold.green('\n✓ Benchmark Complete!\n'));
+              console.log(chalk.bold('Results:\n'));
+              console.log(chalk.cyan(`${r.model_name} (${r.quantization})`));
+              console.log(`  Energy: ${chalk.yellow(r.metrics.total_energy_wh.toFixed(4))} Wh`);
+              console.log(`  Power: ${r.metrics.avg_power_watts}W`);
+              console.log(`  Speed: ${r.metrics.tokens_per_second || 'N/A'} tok/s`);
+              console.log(`  Tokens: ${r.metrics.tokens_generated} generated`);
+              console.log(`  Duration: ${r.metrics.duration_seconds}s\n`);
+            }
+
+            console.log(chalk.gray('View detailed results at: https://envirollm.com/optimize'));
+          }
+        } catch (err) {
+          console.error(chalk.red('Failed to parse response'));
+          console.error(responseData);
+        }
+      });
+    });
+
+    benchmarkReq.on('error', (err) => {
+      console.error(chalk.red('Benchmark failed:', err.message));
+      process.exit(1);
+    });
+
+    benchmarkReq.write(postData);
+    benchmarkReq.end();
+  });
+
 program.parse();
