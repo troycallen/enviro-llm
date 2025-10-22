@@ -42,6 +42,36 @@ interface CostSavings {
   kwh_rate: number;
 }
 
+const GPU_POWER_REFERENCE_WATTS = 450;
+const GPU_TEMPERATURE_REFERENCE_C = 110;
+
+const clampPercent = (value: number, maxValue: number) => {
+  if (!Number.isFinite(value) || !Number.isFinite(maxValue) || maxValue <= 0) {
+    return 0;
+  }
+  return Math.min(Math.max((value / maxValue) * 100, 0), 100);
+};
+
+const getPowerColor = (powerWatts: number) => {
+  if (powerWatts < 180) {
+    return 'bg-emerald-400';
+  }
+  if (powerWatts < 300) {
+    return 'bg-amber-400';
+  }
+  return 'bg-orange-500';
+};
+
+const getTemperatureColor = (temperatureC: number) => {
+  if (temperatureC < 65) {
+    return 'bg-cyan-400';
+  }
+  if (temperatureC < 80) {
+    return 'bg-amber-400';
+  }
+  return 'bg-red-500';
+};
+
 export default function Dashboard() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -49,6 +79,10 @@ export default function Dashboard() {
   const [showPowerInfo, setShowPowerInfo] = useState(false);
   const [systemSpecs, setSystemSpecs] = useState<SystemSpecs | null>(null);
   const [costSavings, setCostSavings] = useState<CostSavings | null>(null);
+
+  const currentPowerEstimate = metrics?.power_estimate ?? 0;
+  const systemPowerPercent = clampPercent(currentPowerEstimate, GPU_POWER_REFERENCE_WATTS);
+  const systemPowerColor = getPowerColor(currentPowerEstimate);
 
   useEffect(() => {
     localStorage.setItem('hasVisitedDashboard', 'true');
@@ -189,11 +223,16 @@ export default function Dashboard() {
               </button>
             </div>
             <div className="text-3xl font-mono text-white">
-              {metrics ? metrics.power_estimate.toFixed(1) : '0.0'}W
+              {metrics ? metrics.power_estimate.toFixed(1) : '0.0'}
+              <span className="ml-1 text-lg text-gray-400">W</span>
             </div>
-            <div className="text-sm text-gray-400 mt-2">
-              Estimated system power draw
+            <div className="w-full bg-gray-700 rounded-full h-2 mt-3">
+              <div
+                className={`${systemPowerColor} h-2 rounded-full transition-all duration-500`}
+                style={{ width: `${systemPowerPercent}%` }}
+              ></div>
             </div>
+            <div className="text-xs text-gray-400 mt-2">Estimated system power draw</div>
             {showPowerInfo && (
               <>
                 <div
@@ -229,41 +268,65 @@ export default function Dashboard() {
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-4">GPU Metrics</h2>
             <div className="grid gap-4">
-              {metrics.gpu_info.gpus.map((gpu) => (
-                <div key={gpu.id} className="bg-gray-800 border border-gray-700 p-6 rounded">
-                  <h3 className="text-purple-400 font-bold text-lg mb-4">{gpu.name}</h3>
-                  <div className="grid md:grid-cols-4 gap-4">
-                    <div>
-                      <div className="text-sm text-gray-400">GPU Usage</div>
-                      <div className="text-2xl font-mono text-white">{gpu.usage_percent}%</div>
-                      <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                        <div
-                          className="bg-purple-500 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(gpu.usage_percent, 100)}%` }}
-                        ></div>
+              {metrics.gpu_info.gpus.map((gpu) => {
+                const powerPercent = clampPercent(gpu.power_watts, GPU_POWER_REFERENCE_WATTS);
+                const temperaturePercent = clampPercent(
+                  gpu.temperature_c,
+                  GPU_TEMPERATURE_REFERENCE_C
+                );
+                const temperatureColor = getTemperatureColor(gpu.temperature_c);
+
+                return (
+                  <div key={gpu.id} className="bg-gray-800 border border-gray-700 p-6 rounded">
+                    <h3 className="text-purple-400 font-bold text-lg mb-4">{gpu.name}</h3>
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <div>
+                        <div className="text-sm text-gray-400">GPU Usage</div>
+                        <div className="text-2xl font-mono text-white">{gpu.usage_percent}%</div>
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                          <div
+                            className="bg-purple-500 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(gpu.usage_percent, 100)}%` }}
+                          ></div>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-400">VRAM</div>
-                      <div className="text-2xl font-mono text-white">{gpu.memory_percent.toFixed(1)}%</div>
-                      <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
-                        <div
-                          className="bg-green-500 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(gpu.memory_percent, 100)}%` }}
-                        ></div>
+                      <div>
+                        <div className="text-sm text-gray-400">VRAM</div>
+                        <div className="text-2xl font-mono text-white">{gpu.memory_percent.toFixed(1)}%</div>
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                          <div
+                            className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(gpu.memory_percent, 100)}%` }}
+                          ></div>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-400">Power</div>
-                      <div className="text-2xl font-mono text-white">{gpu.power_watts}W</div>
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-400">Temperature</div>
-                      <div className="text-2xl font-mono text-white">{gpu.temperature_c}°C</div>
+                      <div>
+                        <div className="text-sm text-gray-400">Power</div>
+                        <div className="text-2xl font-mono text-white">{gpu.power_watts}W</div>
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                          <div
+                            className="bg-yellow-400 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${powerPercent}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">Temperature</div>
+                        <div className="text-2xl font-mono text-white">
+                          {gpu.temperature_c}
+                          <span className="ml-1 text-sm text-gray-400">&deg;C</span>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2 mt-2">
+                          <div
+                            className={`${temperatureColor} h-2 rounded-full transition-all duration-500`}
+                            style={{ width: `${temperaturePercent}%` }}
+                          ></div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
