@@ -268,27 +268,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Potential Savings */}
-        {costSavings && costSavings.potential_power_savings_watts > 0 && (
-          <div className="bg-gray-800 border-l-4 border-green-500 p-6 mb-8 rounded">
-            <h2 className="text-xl font-bold text-green-400 mb-4">Potential Savings</h2>
-            <div className="grid md:grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="text-2xl font-bold text-white">{costSavings.potential_power_savings_watts}W</div>
-                <div className="text-sm text-gray-400">Power Reduction</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-white">${costSavings.monthly_savings_usd}/mo</div>
-                <div className="text-sm text-gray-400">Monthly</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-white">${costSavings.yearly_savings_usd}/yr</div>
-                <div className="text-sm text-gray-400">Yearly</div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {metrics && error && error.includes('demo') && (
           <div className="bg-blue-900 border border-blue-700 p-4 mb-8 rounded">
             <p className="text-blue-300 text-sm">
