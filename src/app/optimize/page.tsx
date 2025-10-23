@@ -3,34 +3,6 @@
 import { useState, useEffect } from 'react';
 import NavBar from '../../components/NavBar';
 
-interface Recommendation {
-  type: string;
-  priority: string;
-  title: string;
-  description: string;
-  implementation: string;
-}
-
-interface OptimizationData {
-  system_specs: {
-    memory_gb: number;
-    cpu_cores: number;
-    gpu_available: boolean;
-    gpus: Array<{
-      id: number;
-      name: string;
-      memory_total_gb: number;
-    }>;
-  };
-  recommendations: Recommendation[];
-  cost_savings: {
-    potential_power_savings_watts: number;
-    monthly_savings_usd: number;
-    yearly_savings_usd: number;
-    kwh_rate: number;
-  };
-}
-
 interface BenchmarkResult {
   id: string;
   model_name: string;
@@ -52,11 +24,9 @@ interface BenchmarkResult {
 }
 
 export default function OptimizePage() {
-  const [optimizationData, setOptimizationData] = useState<OptimizationData | null>(null);
   const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([]);
   const [isRunningBenchmark, setIsRunningBenchmark] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Ollama state
   const [ollamaAvailable, setOllamaAvailable] = useState(false);
@@ -94,35 +64,6 @@ export default function OptimizePage() {
       }
     }
 
-    const fetchOptimizationData = async () => {
-      try {
-        // Try local CLI backend first
-        const response = await fetch('http://localhost:8001/optimize');
-
-        if (response.ok) {
-          const data = await response.json();
-          setOptimizationData(data);
-        } else {
-          throw new Error('Local CLI not responding');
-        }
-      } catch (err) {
-        // Fall back to Railway demo server
-        try {
-          const response = await fetch('https://enviro-llm-production.up.railway.app/optimize');
-          if (response.ok) {
-            const data = await response.json();
-            setOptimizationData(data);
-          } else {
-            throw new Error('Demo backend not responding');
-          }
-        } catch {
-          setError('Unable to connect to backend. Make sure the CLI is running.');
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     const fetchBenchmarks = async () => {
       try {
         const response = await fetch('http://localhost:8001/benchmarks');
@@ -134,10 +75,11 @@ export default function OptimizePage() {
         }
       } catch {
         // No fallback - benchmarks require local CLI
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchOptimizationData();
     fetchBenchmarks();
 
     // Check Ollama status
@@ -336,34 +278,6 @@ export default function OptimizePage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-900 font-inter">
-        <NavBar />
-        <div className="max-w-6xl mx-auto p-8">
-          <div className="text-center">
-            <div className="text-2xl text-white">Analyzing your system...</div>
-            <div className="text-gray-400 mt-2">Generating optimization recommendations</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 font-inter">
-        <NavBar />
-        <div className="max-w-6xl mx-auto p-8">
-          <div className="bg-red-900 border border-red-700 p-6 rounded">
-            <h2 className="text-red-400 font-bold mb-2">Connection Error</h2>
-            <p className="text-red-300">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-900 font-inter">
       <NavBar />
@@ -524,49 +438,6 @@ export default function OptimizePage() {
           )}
         </div>
 
-        {/* System Optimization - Collapsible */}
-        {optimizationData && (
-          <details className="mb-8">
-            <summary className="cursor-pointer bg-gray-800 border border-gray-700 p-4 rounded font-bold text-xl text-white hover:bg-gray-750">
-              System Optimization Recommendations
-            </summary>
-            <div className="mt-4">
-            {/* Recommendations */}
-            <div className="mb-12">
-              <h2 className="text-2xl font-bold text-white mb-4">Optimization Recommendations</h2>
-
-              <div className="space-y-3">
-                {optimizationData.recommendations.map((rec, index) => (
-                  <div key={index} className={`bg-gray-800 border-l-4 p-4 rounded ${
-                    rec.priority === 'high' ? 'border-red-500' :
-                    rec.priority === 'medium' ? 'border-yellow-500' :
-                    'border-blue-500'
-                  }`}>
-                    <div className={`font-bold mb-1 ${
-                      rec.priority === 'high' ? 'text-red-400' :
-                      rec.priority === 'medium' ? 'text-yellow-400' :
-                      'text-blue-400'
-                    }`}>{rec.title}</div>
-                    <div className="text-sm text-gray-300 mb-2">{rec.description}</div>
-                    <div className="text-xs text-gray-400">
-                      <strong>How:</strong> {rec.implementation}
-                    </div>
-                  </div>
-                ))}
-
-                {optimizationData.recommendations.length === 0 && (
-                  <div className="bg-green-900 border border-green-700 p-6 rounded">
-                    <h3 className="text-green-400 font-bold mb-2">✅ System Optimized</h3>
-                    <p className="text-green-200">
-                      Your system appears well-configured for LLM deployment. No critical optimizations needed.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          </details>
-        )}
 
         {/* Response Preview Modal */}
         {selectedResult && (

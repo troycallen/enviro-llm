@@ -69,7 +69,7 @@ export default function Home() {
             </h2>
             <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
               Track resource usage of your local LLMs with visual dashboards.
-              Monitor CPU, GPU, and memory usage in real-time.
+              Monitor CPU, GPU, and memory usage in real-time and get optimization recommendations.
             </p>
             <div className="flex items-center gap-4">
               <a
@@ -94,17 +94,17 @@ export default function Home() {
 
           <div className="bg-gray-800 border border-gray-700 p-8 flex flex-col">
             <h2 className="text-2xl font-bold text-green-400 mb-4 font-jetbrains-mono">
-              OPTIMIZATION & BENCHMARKING
+              MODEL BENCHMARKING
             </h2>
             <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
-              Analyze your system and get optimization suggestions.
-              Benchmark models and compare energy and cost efficiency.
+              Benchmark local LLMs and compare their performance.
+              Test inference speed, resource usage, and energy efficiency across different models.
             </p>
             <a
               href="/optimize"
               className="inline-block bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium w-fit"
             >
-              Benchmark & Get Recommendations
+              Benchmark Models
             </a>
           </div>
         </main>

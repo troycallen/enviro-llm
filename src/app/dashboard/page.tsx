@@ -42,6 +42,21 @@ interface CostSavings {
   kwh_rate: number;
 }
 
+interface Recommendation {
+  type: string;
+  priority: string;
+  title: string;
+  description: string;
+  implementation: string;
+  power_savings_watts?: number;
+}
+
+interface OptimizationData {
+  system_specs: SystemSpecs;
+  recommendations: Recommendation[];
+  cost_savings: CostSavings;
+}
+
 const GPU_POWER_REFERENCE_WATTS = 450;
 const GPU_TEMPERATURE_REFERENCE_C = 110;
 
@@ -79,6 +94,7 @@ export default function Dashboard() {
   const [showPowerInfo, setShowPowerInfo] = useState(false);
   const [systemSpecs, setSystemSpecs] = useState<SystemSpecs | null>(null);
   const [costSavings, setCostSavings] = useState<CostSavings | null>(null);
+  const [optimizationData, setOptimizationData] = useState<OptimizationData | null>(null);
 
   const currentPowerEstimate = metrics?.power_estimate ?? 0;
   const systemPowerPercent = clampPercent(currentPowerEstimate, GPU_POWER_REFERENCE_WATTS);
@@ -125,7 +141,7 @@ export default function Dashboard() {
       fetchMetrics();
       const interval = setInterval(fetchMetrics, 2000);
 
-      // Fetch system specs and cost savings once
+      // Fetch system specs, cost savings, and optimization data 
       const fetchSpecs = async () => {
         try {
           const response = await fetch('http://localhost:8001/optimize');
@@ -133,6 +149,7 @@ export default function Dashboard() {
             const data = await response.json();
             setSystemSpecs(data.system_specs);
             setCostSavings(data.cost_savings);
+            setOptimizationData(data);
           }
         } catch {
           try {
@@ -141,6 +158,7 @@ export default function Dashboard() {
               const data = await response.json();
               setSystemSpecs(data.system_specs);
               setCostSavings(data.cost_savings);
+              setOptimizationData(data);
             }
           } catch {}
         }
@@ -175,7 +193,7 @@ export default function Dashboard() {
               href="/optimize"
               className="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded border border-green-500 transition-colors font-medium"
             >
-              Get Recommendations
+              Benchmark Models
             </a>
           </div>
           <div className="grid md:grid-cols-3 gap-6 relative">
@@ -331,27 +349,53 @@ export default function Dashboard() {
           </div>
         )}
 
+        {isConnected && !error && optimizationData && optimizationData.recommendations.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-white mb-4">System Optimization</h2>
+
+            <div className="space-y-3">
+              {optimizationData.recommendations.map((rec, idx) => {
+                const priorityColors = {
+                  high: 'border-red-500',
+                  medium: 'border-yellow-500',
+                  low: 'border-green-500',
+                };
+                const priorityTextColors = {
+                  high: 'text-red-400',
+                  medium: 'text-yellow-400',
+                  low: 'text-green-400',
+                };
+
+                return (
+                  <div
+                    key={idx}
+                    className={`bg-gray-800 border ${priorityColors[rec.priority as keyof typeof priorityColors] || 'border-gray-700'} p-4 rounded`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className={`text-lg font-semibold ${priorityTextColors[rec.priority as keyof typeof priorityTextColors]}`}>{rec.title}</h3>
+                      <span className={`text-xs font-bold ${priorityTextColors[rec.priority as keyof typeof priorityTextColors]}`}>
+                        {rec.priority.toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="text-gray-300 text-sm">{rec.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {metrics && error && error.includes('demo') && (
           <div className="bg-blue-900 border border-blue-700 p-4 mb-8 rounded">
             <p className="text-blue-300 text-sm">
               <strong>Demo Mode:</strong> Currently showing Railway server metrics.
-              To monitor your local machine, install the CLI tool below or clone the repo and run the backend locally.
+              To monitor your local machine, run the CLI tool below.
             </p>
           </div>
         )}
 
-        {isConnected && !error ? (
-          <div className="bg-green-900 border border-green-700 p-8 rounded">
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-              <h2 className="text-2xl font-bold text-green-400">Successfully Connected</h2>
-            </div>
-            <p className="text-green-200 mt-4">
-              Your local monitoring service is running and sending metrics from your system.
-            </p>
-          </div>
-        ) : (
-          <div className="bg-gray-800 border border-gray-700 p-8 rounded">
+        {(!isConnected || (error && error.includes('demo'))) && (
+          <div className="bg-gray-800 border border-gray-700 p-8 rounded mb-8">
             <h2 className="text-2xl font-bold text-white mb-4">Getting Started</h2>
             <div className="space-y-4 text-gray-300">
               <div>
@@ -368,7 +412,6 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-
 
         {metrics && (
           <div className="mt-8 text-center text-gray-500 text-sm">
