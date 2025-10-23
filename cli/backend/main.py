@@ -607,6 +607,9 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
     """
     print(f"Benchmarking {request.model} at {request.base_url}...")
 
+    # Determine source based on base_url
+    source = "lmstudio" if "localhost:1234" in request.base_url else "custom"
+
     # Run inference
     inference_start = time.time()
     inference_result = await run_openai_inference(request.base_url, request.model, request.prompt, request.api_key)
@@ -638,7 +641,7 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
             "quantization": extract_quantization_from_model(request.model),
             "timestamp": datetime.now().isoformat(),
             "status": "failed",
-            "source": "openai",
+            "source": source,
             "error": inference_result.get("error", "Unknown error"),
             "prompt": request.prompt
         }
@@ -654,7 +657,7 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
             "quantization": extract_quantization_from_model(request.model),
             "timestamp": datetime.now().isoformat(),
             "status": "completed",
-            "source": "openai",
+            "source": source,
             "metrics": {
                 "avg_cpu_usage": round(cpu_percent, 1),
                 "avg_memory_usage": round(memory_percent, 1),

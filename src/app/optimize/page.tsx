@@ -37,7 +37,7 @@ interface BenchmarkResult {
   quantization: string;
   timestamp: string;
   status?: string;
-  source?: 'ollama' | 'openai' | 'manual';
+  source?: 'ollama' | 'openai' | 'lmstudio' | 'custom';
   metrics: {
     avg_cpu_usage: number;
     avg_memory_usage: number;
@@ -75,8 +75,10 @@ export default function OptimizePage() {
 
   // Unified modal state
   const [showBenchmarkModal, setShowBenchmarkModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'ollama' | 'openai' | 'manual'>('ollama');
-  const [openaiSubTab, setOpenaiSubTab] = useState<'lmstudio' | 'custom'>('lmstudio');
+  const [activeTab, setActiveTab] = useState<'ollama' | 'lmstudio' | 'custom'>('ollama');
+
+  // Custom prompt state
+  const [customPrompt, setCustomPrompt] = useState('Explain quantum computing in simple terms.');
 
   // Response preview
   const [selectedResult, setSelectedResult] = useState<BenchmarkResult | null>(null);
@@ -179,7 +181,7 @@ export default function OptimizePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: "Explain quantum computing.",
+          prompt: customPrompt,
           model_name: "Current LLM",
           quantization: "Unknown"
         })
@@ -226,7 +228,7 @@ export default function OptimizePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           models: selectedModels,
-          prompt: "Explain quantum computing in simple terms."
+          prompt: customPrompt
         })
       });
 
@@ -272,7 +274,7 @@ export default function OptimizePage() {
         body: JSON.stringify({
           base_url: 'http://localhost:1234/v1',
           model: selectedLmStudioModel,
-          prompt: "Explain quantum computing in simple terms.",
+          prompt: customPrompt,
           api_key: null
         })
       });
@@ -310,7 +312,7 @@ export default function OptimizePage() {
         body: JSON.stringify({
           base_url: openaiUrl,
           model: openaiModel,
-          prompt: "Explain quantum computing in simple terms.",
+          prompt: customPrompt,
           api_key: openaiApiKey || null
         })
       });
@@ -412,21 +414,23 @@ export default function OptimizePage() {
 
               <div className="bg-gray-900 border border-gray-700 p-4 rounded">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">🔌</span>
-                  <span className="font-bold text-white">OpenAI API</span>
+                  <span className="text-2xl">💻</span>
+                  <span className="font-bold text-white">LM Studio</span>
                 </div>
                 <p className="text-gray-400 text-xs">
-                  LM Studio, vLLM, etc.
+                  {lmStudioAvailable
+                    ? `${lmStudioModels.length} models available`
+                    : 'Not running'}
                 </p>
               </div>
 
               <div className="bg-gray-900 border border-gray-700 p-4 rounded">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">⚙️</span>
-                  <span className="font-bold text-white">Manual</span>
+                  <span className="text-2xl">🔌</span>
+                  <span className="font-bold text-white">Custom API</span>
                 </div>
                 <p className="text-gray-400 text-xs">
-                  Custom configuration
+                  vLLM, text-gen-webui, etc.
                 </p>
               </div>
             </div>
@@ -473,9 +477,13 @@ export default function OptimizePage() {
                       : 'N/A';
 
                     const sourceBadge = result.source === 'ollama' ? '🦙' :
+                                       result.source === 'lmstudio' ? '💻' :
+                                       result.source === 'custom' ? '🔌' :
                                        result.source === 'openai' ? '🔌' : '⚙️';
                     const sourceLabel = result.source === 'ollama' ? 'Ollama' :
-                                       result.source === 'openai' ? 'OpenAI' : 'Manual';
+                                       result.source === 'lmstudio' ? 'LM Studio' :
+                                       result.source === 'custom' ? 'Custom API' :
+                                       result.source === 'openai' ? 'Custom API' : 'Manual';
 
                     return (
                       <tr key={result.id} className="border-t border-gray-700 hover:bg-gray-750">
@@ -603,8 +611,8 @@ export default function OptimizePage() {
 
         {/* Unified Benchmark Modal */}
         {showBenchmarkModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm">
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-[700px] h-[80vh] mx-4 overflow-y-auto flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-bold text-white">Configure Benchmark</h3>
                 <button
@@ -630,27 +638,27 @@ export default function OptimizePage() {
                   </span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('openai')}
+                  onClick={() => setActiveTab('lmstudio')}
                   className={`px-4 py-2 font-medium transition-colors ${
-                    activeTab === 'openai'
+                    activeTab === 'lmstudio'
                       ? 'text-blue-400 border-b-2 border-blue-400'
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span>OpenAI API</span>
+                    <span>LM Studio</span>
                   </span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('manual')}
+                  onClick={() => setActiveTab('custom')}
                   className={`px-4 py-2 font-medium transition-colors ${
-                    activeTab === 'manual'
+                    activeTab === 'custom'
                       ? 'text-blue-400 border-b-2 border-blue-400'
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
                   <span className="flex items-center gap-2">
-                    <span>Manual</span>
+                    <span>Custom API</span>
                   </span>
                 </button>
               </div>
@@ -659,8 +667,21 @@ export default function OptimizePage() {
               {activeTab === 'ollama' && (
                 <>
                   <p className="text-gray-300 mb-4">
-                    Select models to benchmark. The system will automatically run inference and measure energy consumption.
+                    Select models to benchmark and customize your prompt.
                   </p>
+
+                  <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">Benchmark Prompt</label>
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Enter the prompt to use for benchmarking..."
+                      className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
+                    />
+                    <p className="text-gray-400 text-sm mt-1">
+                      This prompt will be sent to each model during the benchmark.
+                    </p>
+                  </div>
 
                   {ollamaModels.length === 0 ? (
                     <div className="bg-yellow-900 border border-yellow-700 p-4 rounded mb-4">
@@ -725,193 +746,155 @@ export default function OptimizePage() {
                 </>
               )}
 
-              {/* OpenAI Tab */}
-              {activeTab === 'openai' && (
+              {/* LM Studio Tab */}
+              {activeTab === 'lmstudio' && (
                 <>
-                  {/* Sub-tabs for LM Studio vs Custom */}
-                  <div className="flex gap-2 mb-4 bg-gray-900 p-1 rounded">
-                    <button
-                      onClick={() => setOpenaiSubTab('lmstudio')}
-                      className={`flex-1 px-4 py-2 rounded font-medium transition-colors ${
-                        openaiSubTab === 'lmstudio'
-                          ? 'bg-gray-700 text-white'
-                          : 'text-gray-400 hover:text-gray-300'
-                      }`}
-                    >
-                      LM Studio
-                    </button>
-                    <button
-                      onClick={() => setOpenaiSubTab('custom')}
-                      className={`flex-1 px-4 py-2 rounded font-medium transition-colors ${
-                        openaiSubTab === 'custom'
-                          ? 'bg-gray-700 text-white'
-                          : 'text-gray-400 hover:text-gray-300'
-                      }`}
-                    >
-                      Custom API
-                    </button>
+                  <p className="text-gray-300 mb-4">
+                    Select a model from LM Studio. Make sure the server is running.
+                  </p>
+
+                  <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">Benchmark Prompt</label>
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Enter the prompt to use for benchmarking..."
+                      className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
+                    />
+                    <p className="text-gray-400 text-sm mt-1">
+                      This prompt will be sent to each model during the benchmark.
+                    </p>
                   </div>
 
-                  {/* LM Studio Sub-tab */}
-                  {openaiSubTab === 'lmstudio' && (
-                    <>
-                      <p className="text-gray-300 mb-4">
-                        Select a model from LM Studio. Make sure the server is running.
+                  {!lmStudioAvailable ? (
+                    <div className="bg-yellow-900 border border-yellow-700 p-4 rounded mb-4">
+                      <p className="text-yellow-200 mb-2">
+                        LM Studio server not detected. Make sure:
                       </p>
-
-                      {!lmStudioAvailable ? (
-                        <div className="bg-yellow-900 border border-yellow-700 p-4 rounded mb-4">
-                          <p className="text-yellow-200 mb-2">
-                            LM Studio server not detected. Make sure:
-                          </p>
-                          <ul className="text-yellow-200 text-sm list-disc list-inside space-y-1">
-                            <li>LM Studio is open</li>
-                            <li>A model is loaded</li>
-                            <li>The server is started (check API Usage tab)</li>
-                          </ul>
+                      <ul className="text-yellow-200 text-sm list-disc list-inside space-y-1">
+                        <li>LM Studio is open</li>
+                        <li>A model is loaded</li>
+                        <li>The server is started (check API Usage tab)</li>
+                      </ul>
+                    </div>
+                  ) : lmStudioModels.length === 0 ? (
+                    <div className="bg-yellow-900 border border-yellow-700 p-4 rounded mb-4">
+                      <p className="text-yellow-200">
+                        No models loaded in LM Studio. Load a model first.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mb-4">
+                        <h4 className="text-white font-semibold mb-2">Available Models ({lmStudioModels.length})</h4>
+                        <div className="bg-gray-900 border border-gray-700 rounded p-3">
+                          {lmStudioModels.map(model => (
+                            <label key={model} className="flex items-center gap-3 py-2 hover:bg-gray-800 px-2 rounded cursor-pointer">
+                              <input
+                                type="radio"
+                                name="lmstudio-model"
+                                checked={selectedLmStudioModel === model}
+                                onChange={() => setSelectedLmStudioModel(model)}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-gray-200">{model}</span>
+                            </label>
+                          ))}
                         </div>
-                      ) : lmStudioModels.length === 0 ? (
-                        <div className="bg-yellow-900 border border-yellow-700 p-4 rounded mb-4">
-                          <p className="text-yellow-200">
-                            No models loaded in LM Studio. Load a model first.
-                          </p>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="mb-4">
-                            <h4 className="text-white font-semibold mb-2">Available Models ({lmStudioModels.length})</h4>
-                            <div className="bg-gray-900 border border-gray-700 rounded p-3">
-                              {lmStudioModels.map(model => (
-                                <label key={model} className="flex items-center gap-3 py-2 hover:bg-gray-800 px-2 rounded cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="lmstudio-model"
-                                    checked={selectedLmStudioModel === model}
-                                    onChange={() => setSelectedLmStudioModel(model)}
-                                    className="w-4 h-4"
-                                  />
-                                  <span className="text-gray-200">{model}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
+                      </div>
 
-                          <div className="bg-blue-900 border border-blue-700 p-3 rounded mb-4">
-                            <p className="text-blue-200 text-sm">
-                              <strong>Selected:</strong> {selectedLmStudioModel || 'None'}
-                            </p>
-                          </div>
-                        </>
-                      )}
-
-                      <div className="flex gap-3 justify-end">
-                        <button
-                          onClick={() => setShowBenchmarkModal(false)}
-                          className="px-4 py-2 rounded font-medium bg-gray-700 hover:bg-gray-600 text-white"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={runLmStudioBenchmark}
-                          disabled={!lmStudioAvailable || !selectedLmStudioModel || isRunningBenchmark}
-                          className={`px-4 py-2 rounded font-medium ${
-                            !lmStudioAvailable || !selectedLmStudioModel || isRunningBenchmark
-                              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-500 text-white'
-                          }`}
-                        >
-                          {isRunningBenchmark ? 'Running Benchmark...' : 'Start Benchmark'}
-                        </button>
+                      <div className="bg-blue-900 border border-blue-700 p-3 rounded mb-4">
+                        <p className="text-blue-200 text-sm">
+                          <strong>Selected:</strong> {selectedLmStudioModel || 'None'}
+                        </p>
                       </div>
                     </>
                   )}
 
-                  {/* Custom API Sub-tab */}
-                  {openaiSubTab === 'custom' && (
-                    <>
-                      <p className="text-gray-300 mb-4">
-                        Configure a custom OpenAI-compatible API endpoint (vLLM, text-generation-webui, etc.)
-                      </p>
-
-                      <div className="space-y-4 mb-6">
-                        <div>
-                          <label className="block text-white font-semibold mb-2">API Base URL *</label>
-                          <input
-                            type="text"
-                            value={openaiUrl}
-                            onChange={(e) => setOpenaiUrl(e.target.value)}
-                            placeholder="http://localhost:5000/v1"
-                            className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
-                          />
-                          <p className="text-xs text-gray-400 mt-1">
-                            text-gen-webui: http://localhost:5000/v1 | vLLM: http://localhost:8000/v1
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-white font-semibold mb-2">Model Name *</label>
-                          <input
-                            type="text"
-                            value={openaiModel}
-                            onChange={(e) => setOpenaiModel(e.target.value)}
-                            placeholder="llama-3-8b"
-                            className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
-                          />
-                          <p className="text-xs text-gray-400 mt-1">
-                            The exact model identifier used by your API
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-white font-semibold mb-2">API Key (Optional)</label>
-                          <input
-                            type="password"
-                            value={openaiApiKey}
-                            onChange={(e) => setOpenaiApiKey(e.target.value)}
-                            placeholder="sk-..."
-                            className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
-                          />
-                          <p className="text-xs text-gray-400 mt-1">
-                            Leave blank if your API doesn&apos;t require authentication
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3 justify-end">
-                        <button
-                          onClick={() => setShowBenchmarkModal(false)}
-                          className="px-4 py-2 rounded font-medium bg-gray-700 hover:bg-gray-600 text-white"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={runOpenAIBenchmark}
-                          disabled={!openaiUrl || !openaiModel || isRunningBenchmark}
-                          className={`px-4 py-2 rounded font-medium ${
-                            !openaiUrl || !openaiModel || isRunningBenchmark
-                              ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-500 text-white'
-                          }`}
-                        >
-                          {isRunningBenchmark ? 'Running Benchmark...' : 'Start Benchmark'}
-                        </button>
-                      </div>
-                    </>
-                  )}
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      onClick={() => setShowBenchmarkModal(false)}
+                      className="px-4 py-2 rounded font-medium bg-gray-700 hover:bg-gray-600 text-white"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={runLmStudioBenchmark}
+                      disabled={!lmStudioAvailable || !selectedLmStudioModel || isRunningBenchmark}
+                      className={`px-4 py-2 rounded font-medium ${
+                        !lmStudioAvailable || !selectedLmStudioModel || isRunningBenchmark
+                          ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                          : 'bg-blue-600 hover:bg-blue-500 text-white'
+                      }`}
+                    >
+                      {isRunningBenchmark ? 'Running Benchmark...' : 'Start Benchmark'}
+                    </button>
+                  </div>
                 </>
               )}
 
-              {/* Manual Tab */}
-              {activeTab === 'manual' && (
+              {/* Custom API Tab */}
+              {activeTab === 'custom' && (
                 <>
                   <p className="text-gray-300 mb-4">
-                    Run a manual benchmark with custom configuration.
+                    Configure a custom OpenAI-compatible API endpoint (vLLM, text-generation-webui, etc.)
                   </p>
 
-                  <div className="bg-blue-900 border border-blue-700 p-4 rounded mb-4">
-                    <p className="text-blue-200 text-sm">
-                      This will run a 30-second inference test with the prompt &quot;Explain quantum computing.&quot;
+                  <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">Benchmark Prompt</label>
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      placeholder="Enter the prompt to use for benchmarking..."
+                      className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
+                    />
+                    <p className="text-gray-400 text-sm mt-1">
+                      This prompt will be sent to each model during the benchmark.
                     </p>
+                  </div>
+
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="block text-white font-semibold mb-2">API Base URL *</label>
+                      <input
+                        type="text"
+                        value={openaiUrl}
+                        onChange={(e) => setOpenaiUrl(e.target.value)}
+                        placeholder="http://localhost:5000/v1"
+                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        text-gen-webui: http://localhost:5000/v1 | vLLM: http://localhost:8000/v1
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-white font-semibold mb-2">Model Name *</label>
+                      <input
+                        type="text"
+                        value={openaiModel}
+                        onChange={(e) => setOpenaiModel(e.target.value)}
+                        placeholder="llama-3-8b"
+                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        The exact model identifier used by your API
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-white font-semibold mb-2">API Key (Optional)</label>
+                      <input
+                        type="password"
+                        value={openaiApiKey}
+                        onChange={(e) => setOpenaiApiKey(e.target.value)}
+                        placeholder="sk-..."
+                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Leave blank if your API doesn&apos;t require authentication
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex gap-3 justify-end">
@@ -922,13 +905,10 @@ export default function OptimizePage() {
                       Cancel
                     </button>
                     <button
-                      onClick={() => {
-                        startBenchmark();
-                        setShowBenchmarkModal(false);
-                      }}
-                      disabled={isRunningBenchmark}
+                      onClick={runOpenAIBenchmark}
+                      disabled={!openaiUrl || !openaiModel || isRunningBenchmark}
                       className={`px-4 py-2 rounded font-medium ${
-                        isRunningBenchmark
+                        !openaiUrl || !openaiModel || isRunningBenchmark
                           ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                           : 'bg-blue-600 hover:bg-blue-500 text-white'
                       }`}
