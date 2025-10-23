@@ -624,7 +624,6 @@ export default function OptimizePage() {
                       ? 'text-blue-400 border-b-2 border-blue-400'
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
-                  disabled={!ollamaAvailable}
                 >
                   <span className="flex items-center gap-2">
                     <span>Ollama</span>
