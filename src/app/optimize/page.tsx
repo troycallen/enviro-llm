@@ -386,7 +386,7 @@ export default function OptimizePage() {
               <button
                 onClick={() => {
                   setShowBenchmarkModal(true);
-                  setActiveTab(ollamaAvailable ? 'ollama' : 'openai');
+                  setActiveTab(ollamaAvailable ? 'ollama' : lmStudioAvailable ? 'lmstudio' : 'custom');
                 }}
                 disabled={isRunningBenchmark}
                 className={`px-6 py-3 rounded font-bold text-lg ${

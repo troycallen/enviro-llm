@@ -482,7 +482,11 @@ async def lmstudio_status():
             response = await client.get("http://localhost:1234/v1/models")
             if response.status_code == 200:
                 data = response.json()
-                models = [model["id"] for model in data.get("data", [])]
+                # Filter out embedding models
+                models = [
+                    model["id"] for model in data.get("data", [])
+                    if not any(x in model["id"].lower() for x in ["embedding", "embed"])
+                ]
                 return {
                     "available": True,
                     "models": models,
@@ -637,7 +641,7 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
         # Model failed to run
         result = {
             "id": str(uuid.uuid4()),
-            "model_name": f"{request.model} (OpenAI API)",
+            "model_name": request.model,
             "quantization": extract_quantization_from_model(request.model),
             "timestamp": datetime.now().isoformat(),
             "status": "failed",
@@ -653,7 +657,7 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
 
         result = {
             "id": str(uuid.uuid4()),
-            "model_name": f"{request.model} (OpenAI API)",
+            "model_name": request.model,
             "quantization": extract_quantization_from_model(request.model),
             "timestamp": datetime.now().isoformat(),
             "status": "completed",
