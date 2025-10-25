@@ -10,7 +10,7 @@ Large language models are increasingly being deployed locally for privacy and ac
 
 ### Key Features
 - **Real-Time Monitoring**: Track energy consumption and resource usage with visual dashboards
-- **Ollama Benchmarking**: Automated energy and performance testing across different models and quantization levels
+- **Multi-Platform Benchmarking**: Automated energy and performance testing for Ollama, LM Studio, vLLM, text-generation-webui, and other OpenAI-compatible APIs
 - **CLI Tool**: Command-line interface for detecting and monitoring system stats and LLM processes
 - **Optimization Recommendations**: Hardware-specific suggestions for reducing energy consumption
 - **Quantization Comparison**: Compare Q4, Q8, and FP16 models with real energy and performance metrics
@@ -49,6 +49,7 @@ npx envirollm detect    # Detect LLM processes
 npx envirollm track --auto    # Track LLM processes
 npx envirollm status    # Check if service is running
 npx envirollm benchmark --models llama3:8b,phi3:mini    # Benchmark Ollama models
+npx envirollm benchmark-openai --url http://localhost:1234/v1 --model llama-3-8b    # Benchmark OpenAI-compatible APIs
 ```
 
 ### Ollama Benchmarking
@@ -75,6 +76,26 @@ npx envirollm benchmark --models phi3:mini --prompt "Write a sorting function"
 - Actual response output (for quality comparison)
 
 See [OLLAMA_BENCHMARK.md](OLLAMA_BENCHMARK.md) for full documentation.
+
+### OpenAI-Compatible API Benchmarking
+
+Benchmark LM Studio, vLLM, text-generation-webui, and other OpenAI-compatible APIs:
+
+```bash
+# LM Studio (default runs on http://localhost:1234/v1)
+npx envirollm benchmark-openai --url http://localhost:1234/v1 --model llama-3-8b
+
+# vLLM
+npx envirollm benchmark-openai --url http://localhost:8000/v1 --model meta-llama/Llama-2-7b-hf
+
+# Custom prompt
+npx envirollm benchmark-openai --url http://localhost:1234/v1 --model phi-3-mini --prompt "Write a sorting function"
+
+# With API key (if required)
+npx envirollm benchmark-openai --url http://localhost:1234/v1 --model llama-3-8b --api-key your-key-here
+```
+
+Collects the same energy and performance metrics as Ollama benchmarking.
 
 ### Development Setup
 
