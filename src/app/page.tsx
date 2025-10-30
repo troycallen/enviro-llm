@@ -57,7 +57,7 @@ export default function Home() {
               EnviroLLM
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Your toolkit for tracking, benchmarking, and optimizing resource usage of local LLMs
+              Your toolkit for tracking, benchmarking, and optimizing resource usage of local LLMs.
             </p>
           </header>
         </div>
@@ -69,7 +69,7 @@ export default function Home() {
           <h2 className="text-3xl font-semibold text-emerald-400 mb-4">The Problem</h2>
           <p className="text-gray-300 text-lg leading-relaxed">
             Users lack the tools to measure the resource usage and energy impact of local LLMs. Without visibility into resource consumption,
-            it&apos;s impossible to make informed decisions about model selection, optimization, or sustainable AI practices.
+            it&apos;s difficult to make informed decisions about model selection, optimization, and sustainable AI practices.
           </p>
         </section>
 
@@ -79,7 +79,7 @@ export default function Home() {
               System Monitoring
             </h2>
             <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
-              Track resource usage of your local LLMs with visual dashboards.
+              Track your system performance across setups.
               Monitor CPU, GPU, and memory usage in real-time and get optimization recommendations.
             </p>
             <div className="flex items-center gap-4">
@@ -108,7 +108,7 @@ export default function Home() {
               Model Benchmarking
             </h2>
             <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
-              Benchmark local LLMs and compare their performance.
+              Benchmark local LLMs and compare performance.
               Test inference speed, resource usage, and energy efficiency across different models.
             </p>
             <a
