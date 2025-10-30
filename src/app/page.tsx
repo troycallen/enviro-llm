@@ -42,32 +42,43 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 font-inter">
-      <NavBar />
-      <div className="max-w-6xl mx-auto p-8">
-        <header className="text-center mb-16">
-          <h1 className="text-6xl font-bold text-white mb-6 tracking-tight">
-            EnviroLLM
-          </h1>
-          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-            Open-source toolkit for tracking, benchmarking, and optimizing resource usage of local LLMs
-          </p>
-        </header>
+    <div className="min-h-screen bg-gray-900 font-inter relative">
+      {/* Background Image */}
+      <div className="fixed inset-0 bg-cover bg-center opacity-70 pointer-events-none" style={{ backgroundImage: 'url(/enviro_background.jpg)' }}></div>
+      <div className="fixed inset-0 bg-gradient-to-b from-gray-900/50 via-gray-900/60 to-gray-900 pointer-events-none"></div>
 
-        <section className="bg-gray-800 border border-gray-700 p-8 mb-12">
-          <h2 className="text-2xl font-bold text-red-400 mb-4">THE PROBLEM</h2>
+      <div className="relative z-10">
+        <NavBar />
+
+        {/* Hero Section */}
+        <div className="max-w-6xl mx-auto px-8 py-24">
+          <header className="text-center mb-20">
+            <h1 className="text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
+              EnviroLLM
+            </h1>
+            <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+              Your toolkit for tracking, benchmarking, and optimizing resource usage of local LLMs
+            </p>
+          </header>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-6xl mx-auto px-8 pb-16">
+
+        <section className="bg-gray-800/90 border border-gray-700 p-10 mb-16 rounded-lg">
+          <h2 className="text-3xl font-semibold text-white mb-4">The Problem</h2>
           <p className="text-gray-300 text-lg leading-relaxed">
-            Users lack the tools to measure the resource usage and energy impact of local LLMs. Without visibility into resource consumption, 
+            Users lack the tools to measure the resource usage and energy impact of local LLMs. Without visibility into resource consumption,
             it&apos;s impossible to make informed decisions about model selection, optimization, or sustainable AI practices.
           </p>
         </section>
 
         <main className="grid md:grid-cols-2 gap-8">
-          <div className="bg-gray-800 border border-gray-700 p-8 flex flex-col">
-            <h2 className="text-2xl font-bold text-blue-400 mb-4 font-jetbrains-mono">
-              SYSTEM MONITORING
+          <div className="bg-gray-800/90 border border-gray-700 p-10 flex flex-col rounded-lg hover:border-emerald-500/50 transition-colors">
+            <h2 className="text-2xl font-semibold text-white mb-3">
+              System Monitoring
             </h2>
-            <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
+            <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
               Track resource usage of your local LLMs with visual dashboards.
               Monitor CPU, GPU, and memory usage in real-time and get optimization recommendations.
             </p>
@@ -75,39 +86,40 @@ export default function Home() {
               <a
                 href="/dashboard"
                 onClick={handleStartMonitoring}
-                className={`inline-block px-8 py-3 transition-colors font-medium w-fit ${
+                className={`inline-block px-6 py-3 rounded-md transition-all font-medium w-fit ${
                   isMonitoring
-                    ? 'bg-green-600 hover:bg-green-500 text-white border border-green-500'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white border border-blue-500'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
                 }`}
               >
                 {isMonitoring ? 'View Monitoring' : 'Start Monitoring'}
               </a>
               <button
                 onClick={handleStopMonitoring}
-                className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white border border-red-500 transition-colors font-medium w-fit"
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-all font-medium w-fit"
               >
                 Stop Monitoring
               </button>
             </div>
           </div>
 
-          <div className="bg-gray-800 border border-gray-700 p-8 flex flex-col">
-            <h2 className="text-2xl font-bold text-green-400 mb-4 font-jetbrains-mono">
-              MODEL BENCHMARKING
+          <div className="bg-gray-800/90 border border-gray-700 p-10 flex flex-col rounded-lg hover:border-teal-500/50 transition-colors">
+            <h2 className="text-2xl font-semibold text-white mb-3">
+              Model Benchmarking
             </h2>
-            <p className="text-gray-300 mb-6 leading-relaxed flex-grow">
+            <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
               Benchmark local LLMs and compare their performance.
               Test inference speed, resource usage, and energy efficiency across different models.
             </p>
             <a
               href="/optimize"
-              className="inline-block bg-green-600 hover:bg-green-500 text-white px-8 py-3 border border-green-500 transition-colors font-medium w-fit"
+              className="inline-block bg-teal-600 hover:bg-teal-500 text-white px-6 py-3 rounded-md transition-all font-medium w-fit"
             >
               Benchmark Models
             </a>
           </div>
         </main>
+        </div>
       </div>
     </div>
   );

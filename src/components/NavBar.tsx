@@ -2,12 +2,12 @@ import Link from 'next/link';
 
 export default function NavBar() {
   return (
-    <nav className="bg-gray-800 border-b border-gray-700 px-8 py-4">
+    <nav className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700 px-8 py-5">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className ="flex items-center space-x-6">
-        <Link 
-          href="/" 
-          className="text-2xl font-bold text-white hover:text-blue-400 transition-colors">
+        <div className ="flex items-center space-x-8">
+        <Link
+          href="/"
+          className="text-2xl font-semibold text-white hover:text-emerald-400 transition-colors">
           EnviroLLM
         </Link>
 
@@ -17,8 +17,8 @@ export default function NavBar() {
             Home
         </Link>
         </div>
-        
-        <div className="flex items-center space-x-6">
+
+        <div className="flex items-center space-x-8">
           <Link
             href="/faq"
             className="text-gray-300 hover:text-white transition-colors font-medium">

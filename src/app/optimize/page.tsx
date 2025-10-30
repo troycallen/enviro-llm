@@ -279,19 +279,24 @@ export default function OptimizePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 font-inter">
-      <NavBar />
-      <div className="max-w-6xl mx-auto p-8">
-        <header className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Model Benchmarking
-          </h1>
-          <p className="text-gray-400">Compare energy consumption and performance across models</p>
-        </header>
+    <div className="min-h-screen bg-gray-900 font-inter relative">
+      {/* Background Image */}
+      <div className="fixed inset-0 bg-cover bg-center opacity-70 pointer-events-none" style={{ backgroundImage: 'url(/enviro_background.jpg)' }}></div>
+      <div className="fixed inset-0 bg-gradient-to-b from-gray-900/50 via-gray-900/60 to-gray-900 pointer-events-none"></div>
+
+      <div className="relative z-10">
+        <NavBar />
+        <div className="max-w-6xl mx-auto p-8">
+          <header className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-white mb-4">
+              Model Benchmarking
+            </h1>
+            <p className="text-gray-400">Compare energy consumption and performance across models</p>
+          </header>
 
         {/* Unified Benchmark Launcher */}
         <div className="mb-8">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
+          <div className="bg-gray-800/90 border border-gray-700 rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-1">Run Benchmark</h2>
@@ -366,7 +371,7 @@ export default function OptimizePage() {
           </div>
 
           {benchmarkResults.length > 0 ? (
-            <div className="bg-gray-800 border border-gray-700 rounded overflow-hidden">
+            <div className="bg-gray-800/90 border border-gray-700 rounded overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-700">
                   <tr>
@@ -429,7 +434,7 @@ export default function OptimizePage() {
               </table>
             </div>
           ) : (
-            <div className="bg-gray-800 border border-gray-700 p-8 rounded text-center text-gray-400">
+            <div className="bg-gray-800/90 border border-gray-700 p-8 rounded text-center text-gray-400">
               <p className="mb-2">No benchmarks yet. Start a benchmark to compare model energy efficiency.</p>
               {!ollamaAvailable && (
                 <p className="text-sm">Install Ollama to enable automated benchmarking.</p>
@@ -442,7 +447,7 @@ export default function OptimizePage() {
         {/* Response Preview Modal */}
         {selectedResult && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="bg-gray-800/95 border border-gray-700 rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-bold text-white">{selectedResult.model_name}</h3>
                 <button
@@ -483,7 +488,7 @@ export default function OptimizePage() {
         {/* Unified Benchmark Modal */}
         {showBenchmarkModal && (
           <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-[700px] h-[80vh] mx-4 overflow-y-auto flex flex-col">
+            <div className="bg-gray-800/95 border border-gray-700 rounded-lg p-6 w-[700px] h-[80vh] mx-4 overflow-y-auto flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-bold text-white">Configure Benchmark</h3>
                 <button
@@ -792,6 +797,7 @@ export default function OptimizePage() {
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
