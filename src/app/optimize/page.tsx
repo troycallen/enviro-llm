@@ -157,6 +157,12 @@ export default function OptimizePage() {
     }
   };
 
+  const deleteBenchmark = (id: string) => {
+    const updatedResults = benchmarkResults.filter(result => result.id !== id);
+    setBenchmarkResults(updatedResults);
+    localStorage.setItem('envirollm_benchmarks', JSON.stringify(updatedResults));
+  };
+
   const runOllamaBenchmark = async () => {
     if (selectedModels.length === 0) {
       alert('Please select at least one model');
@@ -311,7 +317,7 @@ export default function OptimizePage() {
                 className={`px-6 py-3 rounded font-bold text-lg ${
                   isRunningBenchmark
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-500 text-white'
+                    : 'bg-teal-600 hover:bg-teal-500 text-white'
                 }`}
               >
                 {isRunningBenchmark ? 'Running...' : 'New Benchmark'}
@@ -415,17 +421,27 @@ export default function OptimizePage() {
                         <td className="p-3 text-white">{result.model_name}</td>
                         <td className="p-3 text-gray-400">{result.quantization}</td>
                         <td className="p-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
-                        <td className="p-3 text-right text-blue-400 font-mono text-xs">{whPerToken}</td>
+                        <td className="p-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
                         <td className="p-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
                         <td className="p-3 text-right">
-                          {result.response && (
+                          <div className="flex items-center justify-end gap-3">
+                            {result.response && (
+                              <button
+                                onClick={() => setSelectedResult(result)}
+                                className="text-lime-400 hover:text-lime-300 text-xs cursor-pointer"
+                              >
+                                View Response
+                              </button>
+                            )}
                             <button
-                              onClick={() => setSelectedResult(result)}
-                              className="text-blue-400 hover:text-blue-300 text-xs"
+                              onClick={() => deleteBenchmark(result.id)}
+                              className="text-red-400 hover:text-red-300 text-xl font-bold leading-none cursor-pointer"
+                              aria-label="Delete benchmark"
+                              title="Delete this benchmark"
                             >
-                              View Response
+                              ×
                             </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -505,7 +521,7 @@ export default function OptimizePage() {
                   onClick={() => setActiveTab('ollama')}
                   className={`px-4 py-2 font-medium transition-colors ${
                     activeTab === 'ollama'
-                      ? 'text-blue-400 border-b-2 border-blue-400'
+                      ? 'text-teal-400 border-b-2 border-teal-400'
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
@@ -587,8 +603,8 @@ export default function OptimizePage() {
                         </div>
                       </div>
 
-                      <div className="bg-blue-900 border border-blue-700 p-3 rounded mb-4">
-                        <p className="text-blue-200 text-sm">
+                      <div className="bg-teal-900/50 border border-teal-600 p-3 rounded mb-4">
+                        <p className="text-teal-200 text-sm">
                           <strong>Selected:</strong> {selectedModels.length} model{selectedModels.length !== 1 ? 's' : ''}
                           {selectedModels.length > 0 && (
                             <span className="block mt-1">
@@ -611,7 +627,7 @@ export default function OptimizePage() {
                           className={`px-4 py-2 rounded font-medium ${
                             selectedModels.length === 0 || isRunningBenchmark
                               ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                              : 'bg-blue-600 hover:bg-blue-500 text-white'
+                              : 'bg-teal-600 hover:bg-teal-500 text-white'
                           }`}
                         >
                           {isRunningBenchmark ? 'Running Benchmark...' : 'Start Benchmark'}
@@ -679,8 +695,8 @@ export default function OptimizePage() {
                         </div>
                       </div>
 
-                      <div className="bg-blue-900 border border-blue-700 p-3 rounded mb-4">
-                        <p className="text-blue-200 text-sm">
+                      <div className="bg-teal-900/50 border border-teal-600 p-3 rounded mb-4">
+                        <p className="text-teal-200 text-sm">
                           <strong>Selected:</strong> {selectedLmStudioModel || 'None'}
                         </p>
                       </div>
