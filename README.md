@@ -14,21 +14,6 @@ Large language models are increasingly being deployed locally for privacy and ac
 - **Multi-Platform Benchmarking**: Automated energy and performance testing for Ollama, LM Studio, vLLM, text-generation-webui, and other OpenAI-compatible APIs
 - **CLI Tool**: Command-line interface for detecting and monitoring system stats and LLM processes
 - **Optimization Recommendations**: Hardware-specific suggestions for reducing energy consumption
-- **Quantization Comparison**: Compare Q4, Q8, and FP16 models with real energy and performance metrics
-
-## Technology Stack
-
-- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
-- **Backend**: Python, FastAPI, PyTorch/TensorFlow
-- **Deployment**: Vercel (Frontend), Railway (Backend)
-- **Version Control**: GitHub with CI/CD pipeline
-
-## Development Timeline
-
-- **Weeks 1-4**: Review existing tools, establish baseline measurement, design dashboard
-- **Weeks 5-8**: Integrate optimization techniques, implement energy/accuracy tracking, release prototype
-- **Weeks 9-12**: Expand benchmarks, user testing, complete case studies
-- **Weeks 13-16**: Incorporate feedback, finalize toolkit, documentation
 
 ## Getting Started
 
@@ -75,8 +60,6 @@ npx envirollm benchmark --models phi3:mini --prompt "Write a sorting function"
 - CPU/GPU/memory usage
 - Quantization detection (Q4, Q8, FP16)
 - Actual response output (for quality comparison)
-
-See [OLLAMA_BENCHMARK.md](OLLAMA_BENCHMARK.md) for full documentation.
 
 ### OpenAI-Compatible API Benchmarking
 
