@@ -73,9 +73,21 @@ export default function Home() {
           </p>
         </section>
 
+        <section className="max-w-2xl mx-auto text-center mb-12">
+          <h2 className="text-2xl font-semibold text-lime-400 mb-4">The Solution</h2>
+          <p className="text-gray-300 mb-4">Get started with one command:</p>
+          <div className="bg-gray-800/90 border border-gray-700 p-6 rounded-lg inline-block">
+            <code className="text-teal-400 text-xl">npx envirollm start</code>
+          </div>
+        </section>
+
+        <div className="text-center mb-6">
+          <p className="text-gray-300 text-lg">Use the CLI directly or explore the dashboards:</p>
+        </div>
+
         <main className="grid md:grid-cols-2 gap-8">
           <div className="bg-gray-800/90 border border-gray-700 p-10 flex flex-col rounded-lg hover:border-emerald-500/50 transition-colors">
-            <h2 className="text-2xl font-semibold text-teal-400 mb-3">
+            <h2 className="text-2xl font-semibold text-emerald-400 mb-3">
               System Monitoring
             </h2>
             <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
@@ -103,7 +115,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-gray-800/90 border border-gray-700 p-10 flex flex-col rounded-lg hover:border-teal-500/50 transition-colors">
+          <div className="bg-gray-800/90 border border-gray-700 p-10 flex flex-col rounded-lg hover:border-lime-500/50 transition-colors">
             <h2 className="text-2xl font-semibold text-lime-400 mb-3">
               Model Benchmarking
             </h2>
