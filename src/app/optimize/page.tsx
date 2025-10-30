@@ -36,7 +36,7 @@ export default function OptimizePage() {
   // LM Studio state
   const [lmStudioAvailable, setLmStudioAvailable] = useState(false);
   const [lmStudioModels, setLmStudioModels] = useState<string[]>([]);
-  const [selectedLmStudioModel, setSelectedLmStudioModel] = useState('');
+  const [selectedLmStudioModels, setSelectedLmStudioModels] = useState<string[]>([]);
 
   // OpenAI state (for custom APIs)
   const [openaiUrl, setOpenaiUrl] = useState('');
@@ -105,9 +105,6 @@ export default function OptimizePage() {
           const data = await response.json();
           setLmStudioAvailable(data.available);
           setLmStudioModels(data.models || []);
-          if (data.models && data.models.length > 0) {
-            setSelectedLmStudioModel(data.models[0]);
-          }
         }
       } catch {
         setLmStudioAvailable(false);
@@ -208,34 +205,47 @@ export default function OptimizePage() {
     }
   };
 
+  const toggleLmStudioModelSelection = (model: string) => {
+    if (selectedLmStudioModels.includes(model)) {
+      setSelectedLmStudioModels(selectedLmStudioModels.filter(m => m !== model));
+    } else {
+      setSelectedLmStudioModels([...selectedLmStudioModels, model]);
+    }
+  };
+
   const runLmStudioBenchmark = async () => {
-    if (!selectedLmStudioModel) {
-      alert('Please select a model');
+    if (selectedLmStudioModels.length === 0) {
+      alert('Please select at least one model');
       return;
     }
 
     setIsRunningBenchmark(true);
     try {
-      const response = await fetch('http://localhost:8001/openai/benchmark', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          base_url: 'http://localhost:1234/v1',
-          model: selectedLmStudioModel,
-          prompt: customPrompt,
-          api_key: null
-        })
-      });
+      // Run benchmarks for each selected model
+      for (const model of selectedLmStudioModels) {
+        const response = await fetch('http://localhost:8001/openai/benchmark', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            base_url: 'http://localhost:1234/v1',
+            model: model,
+            prompt: customPrompt,
+            api_key: null
+          })
+        });
 
-      if (response.ok) {
-        // Refresh benchmarks
-        const benchmarksRes = await fetch('http://localhost:8001/benchmarks');
-        if (benchmarksRes.ok) {
-          const benchData = await benchmarksRes.json();
-          const results = benchData.results || [];
-          setBenchmarkResults(results);
-          localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
+        if (!response.ok) {
+          console.error(`Benchmark failed for ${model}`);
         }
+      }
+
+      // Refresh benchmarks
+      const benchmarksRes = await fetch('http://localhost:8001/benchmarks');
+      if (benchmarksRes.ok) {
+        const benchData = await benchmarksRes.json();
+        const results = benchData.results || [];
+        setBenchmarkResults(results);
+        localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
       }
     } catch (err) {
       console.error('Benchmark failed:', err);
@@ -243,6 +253,7 @@ export default function OptimizePage() {
     } finally {
       setIsRunningBenchmark(false);
       setShowBenchmarkModal(false);
+      setSelectedLmStudioModels([]);
     }
   };
 
@@ -462,8 +473,14 @@ export default function OptimizePage() {
 
         {/* Response Preview Modal */}
         {selectedResult && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-            <div className="bg-gray-800/95 border border-gray-700 rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={() => setSelectedResult(null)}
+          >
+            <div
+              className="bg-gray-800/95 border border-gray-700 rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-bold text-white">{selectedResult.model_name}</h3>
                 <button
@@ -533,7 +550,7 @@ export default function OptimizePage() {
                   onClick={() => setActiveTab('lmstudio')}
                   className={`px-4 py-2 font-medium transition-colors ${
                     activeTab === 'lmstudio'
-                      ? 'text-blue-400 border-b-2 border-blue-400'
+                      ? 'text-teal-400 border-b-2 border-teal-400'
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
@@ -545,7 +562,7 @@ export default function OptimizePage() {
                   onClick={() => setActiveTab('custom')}
                   className={`px-4 py-2 font-medium transition-colors ${
                     activeTab === 'custom'
-                      ? 'text-blue-400 border-b-2 border-blue-400'
+                      ? 'text-teal-400 border-b-2 border-teal-400'
                       : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
@@ -642,7 +659,7 @@ export default function OptimizePage() {
               {activeTab === 'lmstudio' && (
                 <>
                   <p className="text-gray-300 mb-4">
-                    Select a model from LM Studio. Make sure the server is running.
+                    Select models to benchmark and customize your prompt.
                   </p>
 
                   <div className="mb-4">
@@ -679,14 +696,13 @@ export default function OptimizePage() {
                     <>
                       <div className="mb-4">
                         <h4 className="text-white font-semibold mb-2">Available Models ({lmStudioModels.length})</h4>
-                        <div className="bg-gray-900 border border-gray-700 rounded p-3">
+                        <div className="max-h-60 overflow-y-auto bg-gray-900 border border-gray-700 rounded p-3">
                           {lmStudioModels.map(model => (
                             <label key={model} className="flex items-center gap-3 py-2 hover:bg-gray-800 px-2 rounded cursor-pointer">
                               <input
-                                type="radio"
-                                name="lmstudio-model"
-                                checked={selectedLmStudioModel === model}
-                                onChange={() => setSelectedLmStudioModel(model)}
+                                type="checkbox"
+                                checked={selectedLmStudioModels.includes(model)}
+                                onChange={() => toggleLmStudioModelSelection(model)}
                                 className="w-4 h-4"
                               />
                               <span className="text-gray-200">{model}</span>
@@ -697,7 +713,12 @@ export default function OptimizePage() {
 
                       <div className="bg-teal-900/50 border border-teal-600 p-3 rounded mb-4">
                         <p className="text-teal-200 text-sm">
-                          <strong>Selected:</strong> {selectedLmStudioModel || 'None'}
+                          <strong>Selected:</strong> {selectedLmStudioModels.length} model{selectedLmStudioModels.length !== 1 ? 's' : ''}
+                          {selectedLmStudioModels.length > 0 && (
+                            <span className="block mt-1">
+                              {selectedLmStudioModels.join(', ')}
+                            </span>
+                          )}
                         </p>
                       </div>
                     </>
@@ -712,11 +733,11 @@ export default function OptimizePage() {
                     </button>
                     <button
                       onClick={runLmStudioBenchmark}
-                      disabled={!lmStudioAvailable || !selectedLmStudioModel || isRunningBenchmark}
+                      disabled={!lmStudioAvailable || selectedLmStudioModels.length === 0 || isRunningBenchmark}
                       className={`px-4 py-2 rounded font-medium ${
-                        !lmStudioAvailable || !selectedLmStudioModel || isRunningBenchmark
+                        !lmStudioAvailable || selectedLmStudioModels.length === 0 || isRunningBenchmark
                           ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white'
+                          : 'bg-teal-600 hover:bg-teal-500 text-white'
                       }`}
                     >
                       {isRunningBenchmark ? 'Running Benchmark...' : 'Start Benchmark'}
@@ -753,7 +774,7 @@ export default function OptimizePage() {
                         value={openaiUrl}
                         onChange={(e) => setOpenaiUrl(e.target.value)}
                         placeholder="http://localhost:5000/v1"
-                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
+                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-teal-500 focus:outline-none"
                       />
                       <p className="text-xs text-gray-400 mt-1">
                         text-gen-webui: http://localhost:5000/v1 | vLLM: http://localhost:8000/v1
@@ -767,7 +788,7 @@ export default function OptimizePage() {
                         value={openaiModel}
                         onChange={(e) => setOpenaiModel(e.target.value)}
                         placeholder="llama-3-8b"
-                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
+                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-teal-500 focus:outline-none"
                       />
                       <p className="text-xs text-gray-400 mt-1">
                         The exact model identifier used by your API
@@ -781,7 +802,7 @@ export default function OptimizePage() {
                         value={openaiApiKey}
                         onChange={(e) => setOpenaiApiKey(e.target.value)}
                         placeholder="sk-..."
-                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-blue-500 focus:outline-none"
+                        className="w-full bg-gray-900 border border-gray-700 text-white px-4 py-2 rounded focus:border-teal-500 focus:outline-none"
                       />
                       <p className="text-xs text-gray-400 mt-1">
                         Leave blank if your API doesn&apos;t require authentication
@@ -802,7 +823,7 @@ export default function OptimizePage() {
                       className={`px-4 py-2 rounded font-medium ${
                         !openaiUrl || !openaiModel || isRunningBenchmark
                           ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-500 text-white'
+                          : 'bg-teal-600 hover:bg-teal-500 text-white'
                       }`}
                     >
                       {isRunningBenchmark ? 'Running Benchmark...' : 'Start Benchmark'}
