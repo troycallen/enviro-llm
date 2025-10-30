@@ -10,6 +10,7 @@ Large language models are increasingly being deployed locally for privacy and ac
 
 ### Key Features
 - **Real-Time Monitoring**: Track energy consumption and resource usage with visual dashboards
+- **Inference Benchmarking**: Measure tokens per second, latency, and inference performance across models
 - **Multi-Platform Benchmarking**: Automated energy and performance testing for Ollama, LM Studio, vLLM, text-generation-webui, and other OpenAI-compatible APIs
 - **CLI Tool**: Command-line interface for detecting and monitoring system stats and LLM processes
 - **Optimization Recommendations**: Hardware-specific suggestions for reducing energy consumption

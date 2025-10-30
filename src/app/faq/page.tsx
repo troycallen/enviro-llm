@@ -28,6 +28,7 @@ export default function FAQ() {
             <h2 className="text-2xl font-semibold text-teal-400 mb-4">What can I do with it?</h2>
             <ul className="text-gray-300 leading-relaxed space-y-2 text-lg">
               <li>• Monitor CPU, memory, and power usage in real-time</li>
+              <li>• Benchmark inference speed and measure tokens per second</li>
               <li>• See which models are actually efficient vs. resource hogs</li>
               <li>• Compare running models locally vs. using cloud APIs</li>
               <li>• View how you can optimize performance of your model</li>
