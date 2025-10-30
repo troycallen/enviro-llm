@@ -42,3 +42,6 @@ FUTURE.md
 __pycache__
 dist/
 *.log
+
+# papers/pdfs
+*.pdf
