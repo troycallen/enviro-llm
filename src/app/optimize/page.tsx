@@ -286,12 +286,12 @@ export default function OptimizePage() {
 
       <div className="relative z-10">
         <NavBar />
-        <div className="max-w-6xl mx-auto p-8">
-          <header className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-white mb-4">
+        <div className="max-w-[1100px] mx-auto px-8 py-16">
+          <header className="text-center mb-16">
+            <h1 className="text-5xl font-bold text-white mb-6">
               Model Benchmarking
             </h1>
-            <p className="text-gray-400">Compare energy consumption and performance across models</p>
+            <p className="text-gray-300">Compare energy consumption and performance across models</p>
           </header>
 
         {/* Unified Benchmark Launcher */}

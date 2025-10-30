@@ -9,9 +9,9 @@ export default function FAQ() {
 
       <div className="relative z-10">
         <NavBar />
-        <div className="max-w-4xl mx-auto px-8 py-16">
+        <div className="max-w-[1100px] mx-auto px-8 py-16">
           <header className="text-center mb-16">
-            <h1 className="text-5xl font-bold text-white mb-4">
+            <h1 className="text-5xl font-bold text-white mb-6">
               Frequently Asked Questions
             </h1>
           </header>

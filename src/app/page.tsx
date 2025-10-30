@@ -51,22 +51,22 @@ export default function Home() {
         <NavBar />
 
         {/* Hero Section */}
-        <div className="max-w-6xl mx-auto px-8 py-24">
-          <header className="text-center mb-20">
-            <h1 className="text-6xl font-bold text-white mb-6 tracking-tight leading-tight">
+        <div className="max-w-[1100px] mx-auto px-8 pt-16 pb-4">
+          <header className="text-center mb-8">
+            <h1 className="text-5xl font-bold text-white mb-6">
               EnviroLLM
             </h1>
-            <p className="text-xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Your toolkit for tracking, benchmarking, and optimizing resource usage of local LLMs
             </p>
           </header>
         </div>
 
         {/* Main Content */}
-        <div className="max-w-6xl mx-auto px-8 pb-16">
+        <div className="max-w-[1100px] mx-auto px-8 pb-16">
 
         <section className="bg-gray-800/90 border border-gray-700 p-10 mb-16 rounded-lg">
-          <h2 className="text-3xl font-semibold text-white mb-4">The Problem</h2>
+          <h2 className="text-3xl font-semibold text-emerald-400 mb-4">The Problem</h2>
           <p className="text-gray-300 text-lg leading-relaxed">
             Users lack the tools to measure the resource usage and energy impact of local LLMs. Without visibility into resource consumption,
             it&apos;s impossible to make informed decisions about model selection, optimization, or sustainable AI practices.
@@ -75,7 +75,7 @@ export default function Home() {
 
         <main className="grid md:grid-cols-2 gap-8">
           <div className="bg-gray-800/90 border border-gray-700 p-10 flex flex-col rounded-lg hover:border-emerald-500/50 transition-colors">
-            <h2 className="text-2xl font-semibold text-white mb-3">
+            <h2 className="text-2xl font-semibold text-teal-400 mb-3">
               System Monitoring
             </h2>
             <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
@@ -104,7 +104,7 @@ export default function Home() {
           </div>
 
           <div className="bg-gray-800/90 border border-gray-700 p-10 flex flex-col rounded-lg hover:border-teal-500/50 transition-colors">
-            <h2 className="text-2xl font-semibold text-white mb-3">
+            <h2 className="text-2xl font-semibold text-lime-400 mb-3">
               Model Benchmarking
             </h2>
             <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
