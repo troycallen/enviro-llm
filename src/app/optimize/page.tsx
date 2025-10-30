@@ -59,11 +59,14 @@ export default function OptimizePage() {
     if (savedBenchmarks) {
       try {
         setBenchmarkResults(JSON.parse(savedBenchmarks));
+        setIsLoading(false);
+        return; 
       } catch {
-        // Invalid data, ignore
+       
       }
     }
 
+    // Only fetch from backend if localStorage is empty
     const fetchBenchmarks = async () => {
       try {
         const response = await fetch('http://localhost:8001/benchmarks');
