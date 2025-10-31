@@ -56,36 +56,39 @@ export default function OptimizePage() {
   useEffect(() => {
     // Load benchmarks from localStorage on mount
     const savedBenchmarks = localStorage.getItem('envirollm_benchmarks');
+    let hasSavedBenchmarks = false;
     if (savedBenchmarks) {
       try {
         setBenchmarkResults(JSON.parse(savedBenchmarks));
         setIsLoading(false);
-        return; 
+        hasSavedBenchmarks = true;
       } catch {
-       
+        // Invalid data, ignore
       }
     }
 
     // Only fetch from backend if localStorage is empty
-    const fetchBenchmarks = async () => {
-      try {
-        const response = await fetch('http://localhost:8001/benchmarks');
-        if (response.ok) {
-          const data = await response.json();
-          const results = data.results || [];
-          setBenchmarkResults(results);
-          localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
+    if (!hasSavedBenchmarks) {
+      const fetchBenchmarks = async () => {
+        try {
+          const response = await fetch('http://localhost:8001/benchmarks');
+          if (response.ok) {
+            const data = await response.json();
+            const results = data.results || [];
+            setBenchmarkResults(results);
+            localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
+          }
+        } catch {
+          // No fallback - benchmarks require local CLI
+        } finally {
+          setIsLoading(false);
         }
-      } catch {
-        // No fallback - benchmarks require local CLI
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      };
 
-    fetchBenchmarks();
+      fetchBenchmarks();
+    }
 
-    // Check Ollama status
+    // Always check Ollama status
     const checkOllama = async () => {
       try {
         const response = await fetch('http://localhost:8001/ollama/status');
@@ -100,7 +103,7 @@ export default function OptimizePage() {
     };
     checkOllama();
 
-    // Check LM Studio status
+    // Always check LM Studio status
     const checkLmStudio = async () => {
       try {
         const response = await fetch('http://localhost:8001/lmstudio/status');
