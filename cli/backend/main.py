@@ -38,6 +38,64 @@ class OpenAIBenchmarkRequest(BaseModel):
 # Ollama API base URL
 OLLAMA_API_URL = "http://localhost:11434"
 
+def calculate_quality_metrics(response_text: str) -> dict:
+    """
+    Calculate quality metrics for an LLM response.
+    Returns metrics for evaluating response quality.
+    """
+    if not response_text or len(response_text.strip()) == 0:
+        return {
+            "char_count": 0,
+            "word_count": 0,
+            "unique_words": 0,
+            "unique_word_ratio": 0.0,
+            "avg_word_length": 0.0,
+            "sentence_count": 0,
+            "quality_score": 0.0
+        }
+
+    # Clean and tokenize
+    text = response_text.strip()
+    words = text.split()
+    word_count = len(words)
+
+    # Character metrics
+    char_count = len(text)
+
+    # Vocabulary diversity
+    unique_words = len(set(word.lower().strip('.,!?;:()[]{}"\'-') for word in words))
+    unique_word_ratio = unique_words / word_count if word_count > 0 else 0.0
+
+    # Average word length
+    avg_word_length = sum(len(word) for word in words) / word_count if word_count > 0 else 0.0
+
+    # Sentence count (rough estimate)
+    sentence_terminators = text.count('.') + text.count('!') + text.count('?')
+    sentence_count = max(1, sentence_terminators)
+
+    # Efficiency score: Penalize excessively long responses
+    if char_count <= 300:
+        efficiency_score = 40 
+    else:
+        # Gradually penalize longer responses
+        penalty = ((char_count - 300) / 1000) * 40  
+        efficiency_score = max(20, 40 - penalty)  
+
+    diversity_score = min(30, unique_word_ratio * 60)  
+    structure_score = min(30, (sentence_count / 3) * 30)  
+
+    quality_score = round(efficiency_score + diversity_score + structure_score, 1)
+
+    return {
+        "char_count": char_count,
+        "word_count": word_count,
+        "unique_words": unique_words,
+        "unique_word_ratio": round(unique_word_ratio, 3),
+        "avg_word_length": round(avg_word_length, 2),
+        "sentence_count": sentence_count,
+        "quality_score": quality_score
+    }
+
 async def check_ollama_available():
     """Check if Ollama is running"""
     try:
@@ -381,6 +439,92 @@ async def clear_benchmarks():
     benchmark_results.clear()
     return {"status":"success", "message":"All benchmarks cleared"}
 
+@app.delete("/benchmarks/{benchmark_id}")
+async def delete_benchmark(benchmark_id: str):
+    """Delete a specific benchmark by ID"""
+    global benchmark_results
+    initial_count = len(benchmark_results)
+    benchmark_results = [b for b in benchmark_results if b.get("id") != benchmark_id]
+
+    if len(benchmark_results) < initial_count:
+        return {"status": "success", "message": f"Benchmark {benchmark_id} deleted"}
+    else:
+        raise HTTPException(status_code=404, detail="Benchmark not found")
+
+@app.get("/benchmarks/compare")
+async def compare_benchmarks(ids: str):
+    """
+    Compare multiple benchmarks side-by-side.
+    Query param: ids (comma-separated benchmark IDs)
+    Example: /benchmarks/compare?ids=abc123,def456,ghi789
+    """
+    if not ids:
+        raise HTTPException(status_code=400, detail="No benchmark IDs provided")
+
+    benchmark_ids = [id.strip() for id in ids.split(",")]
+
+    # Find requested benchmarks
+    found_benchmarks = []
+    for bid in benchmark_ids:
+        benchmark = next((b for b in benchmark_results if b.get("id") == bid), None)
+        if benchmark:
+            found_benchmarks.append(benchmark)
+
+    if not found_benchmarks:
+        raise HTTPException(status_code=404, detail="No benchmarks found with provided IDs")
+
+    # Calculate comparison metrics
+    comparison = {
+        "benchmarks": found_benchmarks,
+        "count": len(found_benchmarks),
+        "analysis": {}
+    }
+
+    # Find best/worst performers
+    completed_benchmarks = [b for b in found_benchmarks if b.get("status") == "completed"]
+
+    if completed_benchmarks:
+        # Energy efficiency
+        energy_values = [(b["id"], b["metrics"]["total_energy_wh"]) for b in completed_benchmarks]
+        if energy_values:
+            best_energy = min(energy_values, key=lambda x: x[1])
+            worst_energy = max(energy_values, key=lambda x: x[1])
+            comparison["analysis"]["best_energy"] = best_energy[0]
+            comparison["analysis"]["worst_energy"] = worst_energy[0]
+
+        # Speed
+        speed_values = [(b["id"], b["metrics"].get("tokens_per_second", 0)) for b in completed_benchmarks if b["metrics"].get("tokens_per_second")]
+        if speed_values:
+            best_speed = max(speed_values, key=lambda x: x[1])
+            worst_speed = min(speed_values, key=lambda x: x[1])
+            comparison["analysis"]["fastest"] = best_speed[0]
+            comparison["analysis"]["slowest"] = worst_speed[0]
+
+        # Quality
+        quality_values = [(b["id"], b.get("quality_metrics", {}).get("quality_score", 0)) for b in completed_benchmarks if b.get("quality_metrics")]
+        if quality_values:
+            best_quality = max(quality_values, key=lambda x: x[1])
+            worst_quality = min(quality_values, key=lambda x: x[1])
+            comparison["analysis"]["best_quality"] = best_quality[0]
+            comparison["analysis"]["worst_quality"] = worst_quality[0]
+
+        # Efficiency (quality per Wh)
+        efficiency_values = []
+        for b in completed_benchmarks:
+            if b.get("quality_metrics") and b["metrics"]["total_energy_wh"] > 0:
+                quality_score = b["quality_metrics"].get("quality_score", 0)
+                energy = b["metrics"]["total_energy_wh"]
+                efficiency = quality_score / energy
+                efficiency_values.append((b["id"], efficiency))
+
+        if efficiency_values:
+            most_efficient = max(efficiency_values, key=lambda x: x[1])
+            least_efficient = min(efficiency_values, key=lambda x: x[1])
+            comparison["analysis"]["most_efficient"] = most_efficient[0]
+            comparison["analysis"]["least_efficient"] = least_efficient[0]
+
+    return comparison
+
 
 @app.post("/benchmark/start")
 async def start_benchmark(request: BenchmarkRequest):
@@ -570,6 +714,10 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
             if inference_result["response_tokens"] > 0 and inference_duration > 0:
                 tokens_per_second = inference_result["response_tokens"] / inference_duration
 
+            # Calculate quality metrics from full response
+            full_response = inference_result["response"]
+            quality_metrics = calculate_quality_metrics(full_response)
+
             result = {
                 "id": str(uuid.uuid4()),
                 "model_name": model,
@@ -589,8 +737,10 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
                     "prompt_tokens": inference_result["prompt_tokens"],
                     "total_tokens": inference_result["total_tokens"]
                 },
+                "quality_metrics": quality_metrics,
                 "prompt": request.prompt,
-                "response": inference_result["response"][:200] + "..." if len(inference_result["response"]) > 200 else inference_result["response"]
+                "response": full_response,  # Store full response
+                "response_preview": full_response[:200] + "..." if len(full_response) > 200 else full_response
             }
 
         # Store result
@@ -655,6 +805,10 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
         if inference_result["response_tokens"] > 0 and inference_duration > 0:
             tokens_per_second = inference_result["response_tokens"] / inference_duration
 
+        # Calculate quality metrics from full response
+        full_response = inference_result["response"]
+        quality_metrics = calculate_quality_metrics(full_response)
+
         result = {
             "id": str(uuid.uuid4()),
             "model_name": request.model,
@@ -674,8 +828,10 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
                 "prompt_tokens": inference_result["prompt_tokens"],
                 "total_tokens": inference_result["total_tokens"]
             },
+            "quality_metrics": quality_metrics,
             "prompt": request.prompt,
-            "response": inference_result["response"][:200] + "..." if len(inference_result["response"]) > 200 else inference_result["response"]
+            "response": full_response,  
+            "response_preview": full_response[:200] + "..." if len(full_response) > 200 else full_response
         }
 
     benchmark_results.append(result)
