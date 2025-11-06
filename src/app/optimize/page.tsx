@@ -63,8 +63,7 @@ export default function OptimizePage() {
   // Response preview
   const [selectedResult, setSelectedResult] = useState<BenchmarkResult | null>(null);
 
-  // Comparison mode state
-  const [comparisonMode, setComparisonMode] = useState(false);
+  // Comparison state
   const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
   const [showComparisonView, setShowComparisonView] = useState(false);
 
@@ -399,51 +398,40 @@ export default function OptimizePage() {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-white">Benchmark Results</h2>
             <div className="flex gap-3">
-              {benchmarkResults.length >= 2 && !comparisonMode && (
-                <button
-                  onClick={() => {
-                    setComparisonMode(true);
-                    setSelectedForComparison([]);
-                  }}
-                  className="px-4 py-2 rounded font-medium bg-lime-600 hover:bg-lime-500 text-white"
-                >
-                  Compare Models
-                </button>
-              )}
-              {comparisonMode && (
-                <>
-                  <button
-                    onClick={() => {
-                      if (selectedForComparison.length >= 2) {
-                        setShowComparisonView(true);
-                      }
-                    }}
-                    disabled={selectedForComparison.length < 2}
-                    className={`px-4 py-2 rounded font-medium ${
-                      selectedForComparison.length >= 2
-                        ? 'bg-green-600 hover:bg-green-500 text-white'
-                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    Compare Selected ({selectedForComparison.length})
-                  </button>
-                  <button
-                    onClick={() => {
-                      setComparisonMode(false);
-                      setSelectedForComparison([]);
-                    }}
-                    className="px-4 py-2 rounded font-medium bg-gray-600 hover:bg-gray-500 text-white"
-                  >
-                    Cancel
-                  </button>
-                </>
-              )}
+              <button
+                onClick={() => {
+                  if (selectedForComparison.length >= 2) {
+                    setShowComparisonView(true);
+                  }
+                }}
+                disabled={selectedForComparison.length < 2}
+                className={`px-4 py-2 rounded font-medium transition-colors ${
+                  selectedForComparison.length >= 2
+                    ? 'bg-lime-600 hover:bg-lime-500 text-white'
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                }`}
+              >
+                Compare Selected ({selectedForComparison.length})
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedForComparison([]);
+                }}
+                disabled={selectedForComparison.length === 0}
+                className={`px-4 py-2 rounded font-medium transition-colors ${
+                  selectedForComparison.length > 0
+                    ? 'bg-gray-600 hover:bg-gray-500 text-white'
+                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                Deselect All
+              </button>
               {benchmarkResults.length > 0 && (
                 <button
                   onClick={clearBenchmarks}
                   className="px-4 py-2 rounded font-medium bg-red-600 hover:bg-red-500 text-white"
                 >
-                  Clear All
+                  Delete All
                 </button>
               )}
             </div>
@@ -454,9 +442,6 @@ export default function OptimizePage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-700">
                   <tr>
-                    {comparisonMode && (
-                      <th className="text-left p-3 text-gray-300 font-medium w-12">Select</th>
-                    )}
                     <th className="text-left p-3 text-gray-300 font-medium">Source</th>
                     <th className="text-left p-3 text-gray-300 font-medium">Model</th>
                     <th className="text-left p-3 text-gray-300 font-medium">Quantization</th>
@@ -498,23 +483,21 @@ export default function OptimizePage() {
                     const isSelected = selectedForComparison.includes(result.id);
 
                     return (
-                      <tr key={result.id} className={`border-t border-gray-700 hover:bg-gray-750 ${isSelected ? 'bg-lime-900/20' : ''}`}>
-                        {comparisonMode && (
-                          <td className="p-3">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedForComparison([...selectedForComparison, result.id]);
-                                } else {
-                                  setSelectedForComparison(selectedForComparison.filter(id => id !== result.id));
-                                }
-                              }}
-                              className="w-4 h-4 cursor-pointer"
-                            />
-                          </td>
-                        )}
+                      <tr
+                        key={result.id}
+                        onClick={() => {
+                          if (isSelected) {
+                            setSelectedForComparison(selectedForComparison.filter(id => id !== result.id));
+                          } else {
+                            setSelectedForComparison([...selectedForComparison, result.id]);
+                          }
+                        }}
+                        className={`border-t cursor-pointer transition-all ${
+                          isSelected
+                            ? 'bg-lime-900/30 border-lime-600 border-l-4'
+                            : 'border-gray-700 hover:bg-gray-750'
+                        }`}
+                      >
                         <td className="p-3">
                           <span className="inline-flex items-center gap-1 text-xs bg-gray-700 px-2 py-1 rounded">
                             <span>{sourceBadge}</span>
@@ -536,14 +519,20 @@ export default function OptimizePage() {
                           <div className="flex items-center justify-end gap-3">
                             {result.response && (
                               <button
-                                onClick={() => setSelectedResult(result)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedResult(result);
+                                }}
                                 className="text-lime-400 hover:text-lime-300 text-xs cursor-pointer"
                               >
                                 View Response
                               </button>
                             )}
                             <button
-                              onClick={() => deleteBenchmark(result.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteBenchmark(result.id);
+                              }}
                               className="text-red-400 hover:text-red-300 text-xl font-bold leading-none cursor-pointer"
                               aria-label="Delete benchmark"
                               title="Delete this benchmark"
@@ -574,8 +563,6 @@ export default function OptimizePage() {
             className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm p-4"
             onClick={() => {
               setShowComparisonView(false);
-              setComparisonMode(false);
-              setSelectedForComparison([]);
             }}
           >
             <div
@@ -587,8 +574,6 @@ export default function OptimizePage() {
                 <button
                   onClick={() => {
                     setShowComparisonView(false);
-                    setComparisonMode(false);
-                    setSelectedForComparison([]);
                   }}
                   className="text-gray-400 hover:text-white text-2xl font-bold"
                 >
