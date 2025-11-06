@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import NavBar from '../../components/NavBar';
 
 interface BenchmarkResult {
@@ -358,7 +359,13 @@ export default function OptimizePage() {
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div className="bg-gray-900 border border-gray-700 p-4 rounded">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">🦙</span>
+                  <Image
+                    src="/ollama.jpg"
+                    alt="Ollama"
+                    width={24}
+                    height={24}
+                    className="rounded"
+                  />
                   <span className="font-bold text-white">Ollama</span>
                 </div>
                 <p className="text-gray-400 text-xs">
@@ -370,7 +377,13 @@ export default function OptimizePage() {
 
               <div className="bg-gray-900 border border-gray-700 p-4 rounded">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">💻</span>
+                  <Image
+                    src="/lm_studio.png"
+                    alt="LM Studio"
+                    width={24}
+                    height={24}
+                    className="rounded"
+                  />
                   <span className="font-bold text-white">LM Studio</span>
                 </div>
                 <p className="text-gray-400 text-xs">
@@ -382,7 +395,13 @@ export default function OptimizePage() {
 
               <div className="bg-gray-900 border border-gray-700 p-4 rounded">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">🔌</span>
+                  <Image
+                    src="/api.jpg"
+                    alt="Custom API"
+                    width={24}
+                    height={24}
+                    className="rounded"
+                  />
                   <span className="font-bold text-white">Custom API</span>
                 </div>
                 <p className="text-gray-400 text-xs">
@@ -463,14 +482,21 @@ export default function OptimizePage() {
                       ? (result.metrics.total_energy_wh / result.metrics.tokens_generated).toFixed(6)
                       : 'N/A';
 
-                    const sourceBadge = result.source === 'ollama' ? '🦙' :
-                                       result.source === 'lmstudio' ? '💻' :
-                                       result.source === 'custom' ? '🔌' :
-                                       result.source === 'openai' ? '🔌' : '⚙️';
-                    const sourceLabel = result.source === 'ollama' ? 'Ollama' :
-                                       result.source === 'lmstudio' ? 'LM Studio' :
-                                       result.source === 'custom' ? 'Custom API' :
-                                       result.source === 'openai' ? 'Custom API' : 'Manual';
+                    const getSourceInfo = (source: string) => {
+                      switch(source) {
+                        case 'ollama':
+                          return { image: '/ollama.jpg', label: 'Ollama' };
+                        case 'lmstudio':
+                          return { image: '/lm_studio.png', label: 'LM Studio' };
+                        case 'custom':
+                        case 'openai':
+                          return { image: '/api.jpg', label: 'Custom API' };
+                        default:
+                          return { image: null, label: 'Manual' };
+                      }
+                    };
+
+                    const sourceInfo = getSourceInfo(result.source);
 
                     const qualityScore = result.quality_metrics?.quality_score;
                     const qualityDisplay = qualityScore !== undefined ? qualityScore.toFixed(1) : 'N/A';
@@ -499,9 +525,19 @@ export default function OptimizePage() {
                         }`}
                       >
                         <td className="p-3">
-                          <span className="inline-flex items-center gap-1 text-xs bg-gray-700 px-2 py-1 rounded">
-                            <span>{sourceBadge}</span>
-                            <span className="text-gray-300">{sourceLabel}</span>
+                          <span className="inline-flex items-center gap-2 text-xs bg-gray-700 px-2 py-1 rounded">
+                            {sourceInfo.image ? (
+                              <Image
+                                src={sourceInfo.image}
+                                alt={sourceInfo.label}
+                                width={20}
+                                height={20}
+                                className="rounded"
+                              />
+                            ) : (
+                              <span>⚙️</span>
+                            )}
+                            <span className="text-gray-300">{sourceInfo.label}</span>
                           </span>
                         </td>
                         <td className="p-3 text-white">{result.model_name}</td>
@@ -593,10 +629,40 @@ export default function OptimizePage() {
 
                   const qualityScore = result.quality_metrics?.quality_score;
 
+                  const getSourceInfo = (source: string) => {
+                    switch(source) {
+                      case 'ollama':
+                        return { image: '/ollama.jpg', label: 'Ollama' };
+                      case 'lmstudio':
+                        return { image: '/lm_studio.png', label: 'LM Studio' };
+                      case 'custom':
+                      case 'openai':
+                        return { image: '/api.jpg', label: 'Custom API' };
+                      default:
+                        return { image: null, label: 'Manual' };
+                    }
+                  };
+
+                  const sourceInfo = getSourceInfo(result.source);
+
                   return (
                     <div key={id} className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
                       {/* Model Header */}
                       <div className="mb-4 pb-4 border-b border-gray-700">
+                        <div className="flex items-center gap-2 mb-2">
+                          {sourceInfo.image ? (
+                            <Image
+                              src={sourceInfo.image}
+                              alt={sourceInfo.label}
+                              width={20}
+                              height={20}
+                              className="rounded"
+                            />
+                          ) : (
+                            <span>⚙️</span>
+                          )}
+                          <span className="text-xs text-gray-400">{sourceInfo.label}</span>
+                        </div>
                         <h3 className="text-lg font-bold text-white mb-1">{result.model_name}</h3>
                         <p className="text-sm text-gray-400">{result.quantization}</p>
                       </div>
@@ -792,6 +858,13 @@ export default function OptimizePage() {
                   }`}
                 >
                   <span className="flex items-center gap-2">
+                    <Image
+                      src="/ollama.jpg"
+                      alt="Ollama"
+                      width={24}
+                      height={24}
+                      className="rounded"
+                    />
                     <span>Ollama</span>
                   </span>
                 </button>
@@ -804,6 +877,13 @@ export default function OptimizePage() {
                   }`}
                 >
                   <span className="flex items-center gap-2">
+                    <Image
+                      src="/lm_studio.png"
+                      alt="LM Studio"
+                      width={24}
+                      height={24}
+                      className="rounded"
+                    />
                     <span>LM Studio</span>
                   </span>
                 </button>
@@ -816,6 +896,13 @@ export default function OptimizePage() {
                   }`}
                 >
                   <span className="flex items-center gap-2">
+                    <Image
+                      src="/api.jpg"
+                      alt="Custom API"
+                      width={24}
+                      height={24}
+                      className="rounded"
+                    />
                     <span>Custom API</span>
                   </span>
                 </button>
