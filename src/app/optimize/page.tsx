@@ -20,7 +20,17 @@ interface BenchmarkResult {
     tokens_generated?: number;
     tokens_per_second?: number;
   };
+  quality_metrics?: {
+    char_count: number;
+    word_count: number;
+    unique_words: number;
+    unique_word_ratio: number;
+    avg_word_length: number;
+    sentence_count: number;
+    quality_score: number;
+  };
   response?: string;
+  response_preview?: string;
 }
 
 export default function OptimizePage() {
@@ -52,6 +62,11 @@ export default function OptimizePage() {
 
   // Response preview
   const [selectedResult, setSelectedResult] = useState<BenchmarkResult | null>(null);
+
+  // Comparison mode state
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
+  const [showComparisonView, setShowComparisonView] = useState(false);
 
   useEffect(() => {
     // Load benchmarks from localStorage on mount
@@ -383,14 +398,55 @@ export default function OptimizePage() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-white">Benchmark Results</h2>
-            {benchmarkResults.length > 0 && (
-              <button
-                onClick={clearBenchmarks}
-                className="px-4 py-2 rounded font-medium bg-red-600 hover:bg-red-500 text-white"
-              >
-                Clear All
-              </button>
-            )}
+            <div className="flex gap-3">
+              {benchmarkResults.length >= 2 && !comparisonMode && (
+                <button
+                  onClick={() => {
+                    setComparisonMode(true);
+                    setSelectedForComparison([]);
+                  }}
+                  className="px-4 py-2 rounded font-medium bg-lime-600 hover:bg-lime-500 text-white"
+                >
+                  Compare Models
+                </button>
+              )}
+              {comparisonMode && (
+                <>
+                  <button
+                    onClick={() => {
+                      if (selectedForComparison.length >= 2) {
+                        setShowComparisonView(true);
+                      }
+                    }}
+                    disabled={selectedForComparison.length < 2}
+                    className={`px-4 py-2 rounded font-medium ${
+                      selectedForComparison.length >= 2
+                        ? 'bg-green-600 hover:bg-green-500 text-white'
+                        : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    Compare Selected ({selectedForComparison.length})
+                  </button>
+                  <button
+                    onClick={() => {
+                      setComparisonMode(false);
+                      setSelectedForComparison([]);
+                    }}
+                    className="px-4 py-2 rounded font-medium bg-gray-600 hover:bg-gray-500 text-white"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+              {benchmarkResults.length > 0 && (
+                <button
+                  onClick={clearBenchmarks}
+                  className="px-4 py-2 rounded font-medium bg-red-600 hover:bg-red-500 text-white"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
           </div>
 
           {benchmarkResults.length > 0 ? (
@@ -398,12 +454,16 @@ export default function OptimizePage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-700">
                   <tr>
+                    {comparisonMode && (
+                      <th className="text-left p-3 text-gray-300 font-medium w-12">Select</th>
+                    )}
                     <th className="text-left p-3 text-gray-300 font-medium">Source</th>
                     <th className="text-left p-3 text-gray-300 font-medium">Model</th>
                     <th className="text-left p-3 text-gray-300 font-medium">Quantization</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Energy (Wh)</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Wh/Token</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Speed (tok/s)</th>
+                    <th className="text-right p-3 text-gray-300 font-medium">Quality</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -427,8 +487,34 @@ export default function OptimizePage() {
                                        result.source === 'custom' ? 'Custom API' :
                                        result.source === 'openai' ? 'Custom API' : 'Manual';
 
+                    const qualityScore = result.quality_metrics?.quality_score;
+                    const qualityDisplay = qualityScore !== undefined ? qualityScore.toFixed(1) : 'N/A';
+                    const qualityColor = qualityScore
+                      ? qualityScore >= 70 ? 'text-green-400'
+                        : qualityScore >= 50 ? 'text-yellow-400'
+                        : 'text-orange-400'
+                      : 'text-gray-400';
+
+                    const isSelected = selectedForComparison.includes(result.id);
+
                     return (
-                      <tr key={result.id} className="border-t border-gray-700 hover:bg-gray-750">
+                      <tr key={result.id} className={`border-t border-gray-700 hover:bg-gray-750 ${isSelected ? 'bg-lime-900/20' : ''}`}>
+                        {comparisonMode && (
+                          <td className="p-3">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedForComparison([...selectedForComparison, result.id]);
+                                } else {
+                                  setSelectedForComparison(selectedForComparison.filter(id => id !== result.id));
+                                }
+                              }}
+                              className="w-4 h-4 cursor-pointer"
+                            />
+                          </td>
+                        )}
                         <td className="p-3">
                           <span className="inline-flex items-center gap-1 text-xs bg-gray-700 px-2 py-1 rounded">
                             <span>{sourceBadge}</span>
@@ -440,6 +526,12 @@ export default function OptimizePage() {
                         <td className="p-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
                         <td className="p-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
                         <td className="p-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
+                        <td className={`p-3 text-right font-mono font-bold ${qualityColor}`}>
+                          {qualityDisplay}
+                          {qualityScore !== undefined && (
+                            <span className="text-gray-500 text-xs ml-1">/100</span>
+                          )}
+                        </td>
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-3">
                             {result.response && (
@@ -476,11 +568,171 @@ export default function OptimizePage() {
           )}
         </div>
 
+        {/* Comparison View Modal */}
+        {showComparisonView && selectedForComparison.length >= 2 && (
+          <div
+            className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm p-4"
+            onClick={() => {
+              setShowComparisonView(false);
+              setComparisonMode(false);
+              setSelectedForComparison([]);
+            }}
+          >
+            <div
+              className="bg-gray-800/95 border border-gray-700 rounded-lg p-6 max-w-7xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-white">Model Comparison</h2>
+                <button
+                  onClick={() => {
+                    setShowComparisonView(false);
+                    setComparisonMode(false);
+                    setSelectedForComparison([]);
+                  }}
+                  className="text-gray-400 hover:text-white text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Comparison Grid */}
+              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.min(selectedForComparison.length, 3)}, minmax(0, 1fr))` }}>
+                {selectedForComparison.map((id) => {
+                  const result = benchmarkResults.find(r => r.id === id);
+                  if (!result) return null;
+
+                  const whPerToken = result.metrics.tokens_generated
+                    ? (result.metrics.total_energy_wh / result.metrics.tokens_generated).toFixed(6)
+                    : 'N/A';
+
+                  const qualityScore = result.quality_metrics?.quality_score;
+
+                  return (
+                    <div key={id} className="bg-gray-900/50 border border-gray-700 rounded-lg p-4">
+                      {/* Model Header */}
+                      <div className="mb-4 pb-4 border-b border-gray-700">
+                        <h3 className="text-lg font-bold text-white mb-1">{result.model_name}</h3>
+                        <p className="text-sm text-gray-400">{result.quantization}</p>
+                      </div>
+
+                      {/* Energy Metrics */}
+                      <div className="space-y-3 mb-4">
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Total Energy</p>
+                          <p className="text-xl font-bold text-green-400">{result.metrics.total_energy_wh.toFixed(4)} Wh</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Energy per Token</p>
+                          <p className="text-lg font-mono text-teal-400">{whPerToken} Wh</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Speed</p>
+                          <p className="text-lg font-mono text-purple-400">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'} tok/s</p>
+                        </div>
+                      </div>
+
+                      {/* Quality Metrics */}
+                      {result.quality_metrics && (
+                        <div className="mb-4 p-3 bg-gray-800 rounded border border-gray-700">
+                          <p className="text-xs text-gray-400 mb-2">Quality Score</p>
+                          <p className="text-2xl font-bold text-lime-400 mb-3">
+                            {qualityScore?.toFixed(1)} <span className="text-sm text-gray-500">/100</span>
+                          </p>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Words:</span>
+                              <span className="text-white">{result.quality_metrics.word_count}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Unique words:</span>
+                              <span className="text-white">{result.quality_metrics.unique_words}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Vocabulary diversity:</span>
+                              <span className="text-white">{(result.quality_metrics.unique_word_ratio * 100).toFixed(1)}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Sentences:</span>
+                              <span className="text-white">{result.quality_metrics.sentence_count}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Response Preview */}
+                      {result.response && (
+                        <div className="mb-2">
+                          <p className="text-xs text-gray-400 mb-2">Response</p>
+                          <div className="bg-gray-800 p-3 rounded text-sm text-gray-300 max-h-48 overflow-y-auto">
+                            {result.response.substring(0, 300)}
+                            {result.response.length > 300 && '...'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Summary Analysis */}
+              <div className="mt-6 p-4 bg-lime-900/20 border border-lime-700/50 rounded-lg">
+                <h3 className="text-lg font-bold text-lime-400 mb-3">Analysis</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  {(() => {
+                    const compared = selectedForComparison
+                      .map(id => benchmarkResults.find(r => r.id === id))
+                      .filter((r): r is BenchmarkResult => r !== undefined);
+
+                    const energies = compared.map(r => r.metrics.total_energy_wh);
+                    const speeds = compared.map(r => r.metrics.tokens_per_second).filter((s): s is number => s !== undefined);
+                    const qualities = compared.map(r => r.quality_metrics?.quality_score).filter((q): q is number => q !== undefined);
+
+                    const bestEnergy = Math.min(...energies);
+                    const worstEnergy = Math.max(...energies);
+                    const bestSpeed = speeds.length > 0 ? Math.max(...speeds) : null;
+                    const bestQuality = qualities.length > 0 ? Math.max(...qualities) : null;
+
+                    const bestEnergyModel = compared.find(r => r.metrics.total_energy_wh === bestEnergy);
+                    const bestSpeedModel = compared.find(r => r.metrics.tokens_per_second === bestSpeed);
+                    const bestQualityModel = compared.find(r => r.quality_metrics?.quality_score === bestQuality);
+
+                    const energySavings = ((worstEnergy - bestEnergy) / worstEnergy * 100).toFixed(1);
+
+                    return (
+                      <>
+                        <div>
+                          <p className="text-gray-400">Most energy efficient:</p>
+                          <p className="text-white font-medium">{bestEnergyModel?.model_name}</p>
+                          <p className="text-lime-400 text-xs">Saves {energySavings}% energy</p>
+                        </div>
+                        {bestSpeedModel && (
+                          <div>
+                            <p className="text-gray-400">Fastest:</p>
+                            <p className="text-white font-medium">{bestSpeedModel.model_name}</p>
+                            <p className="text-purple-400 text-xs">{bestSpeed?.toFixed(1)} tok/s</p>
+                          </div>
+                        )}
+                        {bestQualityModel && (
+                          <div>
+                            <p className="text-gray-400">Best quality:</p>
+                            <p className="text-white font-medium">{bestQualityModel.model_name}</p>
+                            <p className="text-lime-400 text-xs">Score: {bestQuality?.toFixed(1)}/100</p>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Response Preview Modal */}
         {selectedResult && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm"
             onClick={() => setSelectedResult(null)}
           >
             <div
