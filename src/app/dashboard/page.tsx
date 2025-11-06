@@ -93,7 +93,6 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [showPowerInfo, setShowPowerInfo] = useState(false);
   const [systemSpecs, setSystemSpecs] = useState<SystemSpecs | null>(null);
-  const [costSavings, setCostSavings] = useState<CostSavings | null>(null);
   const [optimizationData, setOptimizationData] = useState<OptimizationData | null>(null);
 
   const currentPowerEstimate = metrics?.power_estimate ?? 0;
@@ -148,7 +147,6 @@ export default function Dashboard() {
           if (response.ok) {
             const data = await response.json();
             setSystemSpecs(data.system_specs);
-            setCostSavings(data.cost_savings);
             setOptimizationData(data);
           }
         } catch {
@@ -157,7 +155,6 @@ export default function Dashboard() {
             if (response.ok) {
               const data = await response.json();
               setSystemSpecs(data.system_specs);
-              setCostSavings(data.cost_savings);
               setOptimizationData(data);
             }
           } catch {}

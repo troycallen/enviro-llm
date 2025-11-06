@@ -767,12 +767,12 @@ export default function OptimizePage() {
 
               <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                 <div>
-                  <span className="text-gray-400">Quantization:</span>
-                  <span className="text-white ml-2">{selectedResult.quantization}</span>
-                </div>
-                <div>
                   <span className="text-gray-400">Energy:</span>
                   <span className="text-green-400 ml-2 font-mono">{selectedResult.metrics.total_energy_wh.toFixed(4)} Wh</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Duration:</span>
+                  <span className="text-blue-400 ml-2 font-mono">{selectedResult.metrics.duration_seconds.toFixed(1)} s</span>
                 </div>
                 <div>
                   <span className="text-gray-400">Speed:</span>
