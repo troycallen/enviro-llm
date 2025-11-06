@@ -778,8 +778,14 @@ export default function OptimizePage() {
 
         {/* Unified Benchmark Modal */}
         {showBenchmarkModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm">
-            <div className="bg-gray-800/95 border border-gray-700 rounded-lg p-6 w-[700px] h-[80vh] mx-4 overflow-y-auto flex flex-col">
+          <div
+            className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm"
+            onClick={() => setShowBenchmarkModal(false)}
+          >
+            <div
+              className="bg-gray-800/95 border border-gray-700 rounded-lg p-6 w-[700px] h-[80vh] mx-4 overflow-y-auto flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-2xl font-bold text-white">Configure Benchmark</h3>
                 <button
