@@ -7,7 +7,6 @@ import NavBar from '../../components/NavBar';
 interface BenchmarkResult {
   id: string;
   model_name: string;
-  quantization: string;
   timestamp: string;
   status?: string;
   source?: 'ollama' | 'openai' | 'lmstudio' | 'custom';
@@ -37,7 +36,6 @@ interface BenchmarkResult {
 export default function OptimizePage() {
   const [benchmarkResults, setBenchmarkResults] = useState<BenchmarkResult[]>([]);
   const [isRunningBenchmark, setIsRunningBenchmark] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   // Ollama state
   const [ollamaAvailable, setOllamaAvailable] = useState(false);
@@ -75,7 +73,6 @@ export default function OptimizePage() {
     if (savedBenchmarks) {
       try {
         setBenchmarkResults(JSON.parse(savedBenchmarks));
-        setIsLoading(false);
         hasSavedBenchmarks = true;
       } catch {
         // Invalid data, ignore
@@ -95,8 +92,6 @@ export default function OptimizePage() {
           }
         } catch {
           // No fallback - benchmarks require local CLI
-        } finally {
-          setIsLoading(false);
         }
       };
 
@@ -133,33 +128,6 @@ export default function OptimizePage() {
     };
     checkLmStudio();
   }, []);
-
-  const startBenchmark = async () => {
-    setIsRunningBenchmark(true);
-    try {
-      await fetch('http://localhost:8001/benchmark/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: customPrompt,
-          model_name: "Current LLM",
-          quantization: "Unknown"
-        })
-      });
-      setTimeout(async () => {
-        const response = await fetch('http://localhost:8001/benchmarks');
-        if (response.ok) {
-          const data = await response.json();
-          const results = data.results || [];
-          setBenchmarkResults(results);
-          localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
-        }
-        setIsRunningBenchmark(false);
-      }, 32000); // 30 seconds + 2 second buffer
-    } catch {
-      setIsRunningBenchmark(false);
-    }
-  };
 
   const clearBenchmarks = async () => {
     try {
@@ -199,7 +167,7 @@ export default function OptimizePage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
         // Refresh benchmarks
         const benchmarksRes = await fetch('http://localhost:8001/benchmarks');
         if (benchmarksRes.ok) {
@@ -461,11 +429,10 @@ export default function OptimizePage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-700">
                   <tr>
-                    <th className="text-left p-3 text-gray-300 font-medium">Source</th>
                     <th className="text-left p-3 text-gray-300 font-medium">Model</th>
-                    <th className="text-left p-3 text-gray-300 font-medium">Quantization</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Energy (Wh)</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Wh/Token</th>
+                    <th className="text-right p-3 text-gray-300 font-medium">Duration (s)</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Speed (tok/s)</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Quality</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Actions</th>
@@ -482,7 +449,7 @@ export default function OptimizePage() {
                       ? (result.metrics.total_energy_wh / result.metrics.tokens_generated).toFixed(6)
                       : 'N/A';
 
-                    const getSourceInfo = (source: string) => {
+                    const getSourceInfo = (source?: string) => {
                       switch(source) {
                         case 'ollama':
                           return { image: '/ollama.jpg', label: 'Ollama' };
@@ -524,8 +491,8 @@ export default function OptimizePage() {
                             : 'border-gray-700 hover:bg-gray-750'
                         }`}
                       >
-                        <td className="p-3">
-                          <span className="inline-flex items-center gap-2 text-xs bg-gray-700 px-2 py-1 rounded">
+                        <td className="py-4 px-3">
+                          <div className="flex items-center gap-2">
                             {sourceInfo.image ? (
                               <Image
                                 src={sourceInfo.image}
@@ -537,21 +504,20 @@ export default function OptimizePage() {
                             ) : (
                               <span>⚙️</span>
                             )}
-                            <span className="text-gray-300">{sourceInfo.label}</span>
-                          </span>
+                            <div className="text-white font-medium">{result.model_name}</div>
+                          </div>
                         </td>
-                        <td className="p-3 text-white">{result.model_name}</td>
-                        <td className="p-3 text-gray-400">{result.quantization}</td>
-                        <td className="p-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
-                        <td className="p-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
-                        <td className="p-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
-                        <td className={`p-3 text-right font-mono font-bold ${qualityColor}`}>
+                        <td className="py-4 px-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
+                        <td className="py-4 px-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
+                        <td className="py-4 px-3 text-right text-blue-400 font-mono">{result.metrics.duration_seconds.toFixed(1)}</td>
+                        <td className="py-4 px-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
+                        <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
                           {qualityDisplay}
                           {qualityScore !== undefined && (
                             <span className="text-gray-500 text-xs ml-1">/100</span>
                           )}
                         </td>
-                        <td className="p-3 text-right">
+                        <td className="py-4 px-3 text-right">
                           <div className="flex items-center justify-end gap-3">
                             {result.response && (
                               <button
@@ -629,7 +595,7 @@ export default function OptimizePage() {
 
                   const qualityScore = result.quality_metrics?.quality_score;
 
-                  const getSourceInfo = (source: string) => {
+                  const getSourceInfo = (source?: string) => {
                     switch(source) {
                       case 'ollama':
                         return { image: '/ollama.jpg', label: 'Ollama' };
@@ -663,8 +629,7 @@ export default function OptimizePage() {
                           )}
                           <span className="text-xs text-gray-400">{sourceInfo.label}</span>
                         </div>
-                        <h3 className="text-lg font-bold text-white mb-1">{result.model_name}</h3>
-                        <p className="text-sm text-gray-400">{result.quantization}</p>
+                        <h3 className="text-lg font-bold text-white">{result.model_name}</h3>
                       </div>
 
                       {/* Energy Metrics */}
