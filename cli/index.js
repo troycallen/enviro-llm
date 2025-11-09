@@ -220,6 +220,48 @@ program
     });
 });
 program
+    .command('clean')
+    .description('Remove all stored benchmark data')
+    .action(async () => {
+    const { homedir } = await Promise.resolve().then(() => __importStar(require('os')));
+    const { unlink, access } = await Promise.resolve().then(() => __importStar(require('fs/promises')));
+    const { constants } = await Promise.resolve().then(() => __importStar(require('fs')));
+    const { createInterface } = await Promise.resolve().then(() => __importStar(require('readline')));
+    const dbPath = (0, path_1.join)(homedir(), '.envirollm', 'benchmarks.db');
+    console.log(chalk_1.default.bold.yellow('\nEnviroLLM Data Cleanup\n'));
+    console.log(`Database location: ${dbPath}\n`);
+    // Check if db exists
+    try {
+        await access(dbPath, constants.F_OK);
+    }
+    catch (_a) {
+        console.log(chalk_1.default.gray('No database found. Nothing to clean.'));
+        return;
+    }
+    // confirmation
+    const rl = createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    const answer = await new Promise((resolve) => {
+        rl.question(chalk_1.default.red('This will permanently delete all benchmark data.\nAre you sure? (y/N): '), resolve);
+    });
+    rl.close();
+    if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
+        console.log(chalk_1.default.gray('\nCancelled. No data was deleted.\n'));
+        return;
+    }
+    try {
+        await unlink(dbPath);
+        console.log(chalk_1.default.green('\n✓ Database deleted successfully'));
+        console.log(chalk_1.default.gray('All benchmark data has been removed.\n'));
+    }
+    catch (error) {
+        console.error(chalk_1.default.red('\nError deleting database:'), error.message);
+        process.exit(1);
+    }
+});
+program
     .command('benchmark')
     .description('Run automated Ollama benchmarks')
     .option('-m, --models <models>', 'Comma-separated list of models (e.g., llama3:8b,phi3:mini)')
