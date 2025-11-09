@@ -383,7 +383,34 @@ export default function OptimizePage() {
         {/* Benchmark Results */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-white">Benchmark Results</h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-bold text-white">Benchmark Results</h2>
+              {benchmarkResults.length > 0 && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('http://localhost:8001/benchmarks/export');
+                      if (response.ok) {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `envirollm_benchmarks_${new Date().toISOString().split('T')[0]}.csv`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                      }
+                    } catch (error) {
+                      console.error('Failed to export benchmarks:', error);
+                    }
+                  }}
+                  className="px-4 py-2 rounded font-medium bg-teal-600 hover:bg-teal-500 text-white transition-colors"
+                >
+                  Export CSV
+                </button>
+              )}
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={() => {
@@ -428,7 +455,7 @@ export default function OptimizePage() {
             <div className="bg-gray-800/90 border border-gray-700 rounded overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-700">
-                  <tr>
+                  <tr className="border-l-4 border-l-gray-700">
                     <th className="text-left p-3 text-gray-300 font-medium">Model</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Energy (Wh)</th>
                     <th className="text-right p-3 text-gray-300 font-medium">Wh/Token</th>
@@ -485,10 +512,10 @@ export default function OptimizePage() {
                             setSelectedForComparison([...selectedForComparison, result.id]);
                           }
                         }}
-                        className={`border-t cursor-pointer transition-all ${
+                        className={`border-t border-gray-700 border-l-4 cursor-pointer transition-all ${
                           isSelected
-                            ? 'bg-lime-900/30 border-lime-600 border-l-4'
-                            : 'border-gray-700 hover:bg-gray-750'
+                            ? 'bg-lime-900/30 border-l-lime-600'
+                            : 'border-l-gray-800 hover:bg-gray-750'
                         }`}
                       >
                         <td className="py-4 px-3">
