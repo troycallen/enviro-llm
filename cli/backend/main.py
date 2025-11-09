@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import psutil
 import uvicorn
@@ -9,6 +10,13 @@ import time
 import uuid
 import httpx
 from typing import List, Optional
+import sqlite3
+import json
+from pathlib import Path
+from contextlib import contextmanager
+import io
+import csv
+
 try:
     import pynvml
     NVIDIA_AVAILABLE = True
@@ -17,8 +25,238 @@ except ImportError:
 
 app = FastAPI(title="EnviroLLM API", version="1.0.0")
 
-# In-memory storage for benchmarks
-benchmark_results = []
+# Database configuration
+HOME = Path.home()
+ENVIROLLM_DIR = HOME / ".envirollm"
+DB_PATH = ENVIROLLM_DIR / "benchmarks.db"
+
+class BenchmarkDB:
+    """SQLite database for persistent benchmark storage"""
+
+    def __init__(self, db_path: Path):
+        self.db_path = db_path
+        self._ensure_directory()
+        self._init_db()
+        self._log_startup()
+
+    def _ensure_directory(self):
+        """Create ~/.envirollm directory if it doesn't exist"""
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _log_startup(self):
+        """Log database location on startup"""
+        if not hasattr(self, '_logged'):
+            print(f"\n{'='*60}")
+            print(f"EnviroLLM Database Initialized")
+            print(f"Location: {self.db_path}")
+            print(f"{'='*60}\n")
+            self._logged = True
+
+    @contextmanager
+    def get_connection(self):
+        """Context manager for database connections"""
+        conn = sqlite3.connect(str(self.db_path))
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def _init_db(self):
+        """Initialize database schema"""
+        with self.get_connection() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS benchmarks (
+                    id TEXT PRIMARY KEY,
+                    model_name TEXT NOT NULL,
+                    timestamp TEXT NOT NULL,
+                    status TEXT,
+                    source TEXT,
+                    prompt TEXT,
+                    response TEXT,
+                    response_preview TEXT,
+
+                    -- Performance metrics
+                    avg_cpu_usage REAL,
+                    avg_memory_usage REAL,
+                    avg_power_watts REAL,
+                    peak_memory_gb REAL,
+                    total_energy_wh REAL,
+                    duration_seconds REAL,
+                    tokens_generated INTEGER,
+                    tokens_per_second REAL,
+                    prompt_tokens INTEGER,
+                    total_tokens INTEGER,
+
+                    -- Quality metrics
+                    char_count INTEGER,
+                    word_count INTEGER,
+                    unique_words INTEGER,
+                    unique_word_ratio REAL,
+                    avg_word_length REAL,
+                    sentence_count INTEGER,
+                    quality_score REAL,
+
+                    -- Error info
+                    error TEXT,
+
+                    -- Full JSON for compatibility
+                    full_data TEXT
+                )
+            """)
+
+            # Create index for faster queries
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_timestamp
+                ON benchmarks(timestamp DESC)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_model
+                ON benchmarks(model_name)
+            """)
+
+    def save(self, benchmark: dict):
+        """Save a benchmark result"""
+        metrics = benchmark.get("metrics", {})
+        quality = benchmark.get("quality_metrics", {})
+
+        with self.get_connection() as conn:
+            conn.execute("""
+                INSERT INTO benchmarks (
+                    id, model_name, timestamp, status, source, prompt, response, response_preview,
+                    avg_cpu_usage, avg_memory_usage, avg_power_watts, peak_memory_gb,
+                    total_energy_wh, duration_seconds, tokens_generated, tokens_per_second,
+                    prompt_tokens, total_tokens,
+                    char_count, word_count, unique_words, unique_word_ratio,
+                    avg_word_length, sentence_count, quality_score,
+                    error, full_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                benchmark.get("id"),
+                benchmark.get("model_name"),
+                benchmark.get("timestamp"),
+                benchmark.get("status"),
+                benchmark.get("source"),
+                benchmark.get("prompt"),
+                benchmark.get("response"),
+                benchmark.get("response_preview"),
+                metrics.get("avg_cpu_usage"),
+                metrics.get("avg_memory_usage"),
+                metrics.get("avg_power_watts"),
+                metrics.get("peak_memory_gb"),
+                metrics.get("total_energy_wh"),
+                metrics.get("duration_seconds"),
+                metrics.get("tokens_generated"),
+                metrics.get("tokens_per_second"),
+                metrics.get("prompt_tokens"),
+                metrics.get("total_tokens"),
+                quality.get("char_count"),
+                quality.get("word_count"),
+                quality.get("unique_words"),
+                quality.get("unique_word_ratio"),
+                quality.get("avg_word_length"),
+                quality.get("sentence_count"),
+                quality.get("quality_score"),
+                benchmark.get("error"),
+                json.dumps(benchmark)
+            ))
+
+    def get_all(self) -> List[dict]:
+        """Get all benchmarks, newest first"""
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT full_data FROM benchmarks
+                ORDER BY timestamp DESC
+            """).fetchall()
+            return [json.loads(row["full_data"]) for row in rows]
+
+    def get_by_id(self, benchmark_id: str) -> Optional[dict]:
+        """Get a specific benchmark by ID"""
+        with self.get_connection() as conn:
+            row = conn.execute("""
+                SELECT full_data FROM benchmarks WHERE id = ?
+            """, (benchmark_id,)).fetchone()
+            return json.loads(row["full_data"]) if row else None
+
+    def get_by_ids(self, benchmark_ids: List[str]) -> List[dict]:
+        """Get multiple benchmarks by IDs"""
+        placeholders = ",".join("?" * len(benchmark_ids))
+        with self.get_connection() as conn:
+            rows = conn.execute(f"""
+                SELECT full_data FROM benchmarks
+                WHERE id IN ({placeholders})
+            """, benchmark_ids).fetchall()
+            return [json.loads(row["full_data"]) for row in rows]
+
+    def delete(self, benchmark_id: str) -> bool:
+        """Delete a specific benchmark"""
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                DELETE FROM benchmarks WHERE id = ?
+            """, (benchmark_id,))
+            return cursor.rowcount > 0
+
+    def delete_all(self):
+        """Delete all benchmarks"""
+        with self.get_connection() as conn:
+            conn.execute("DELETE FROM benchmarks")
+
+    def export_csv(self) -> str:
+        """Export all benchmarks to CSV format"""
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Header
+        writer.writerow([
+            "ID", "Model", "Timestamp", "Status", "Source",
+            "Energy (Wh)", "Energy/Token (Wh)", "Duration (s)", "Speed (tok/s)",
+            "Quality Score", "CPU %", "Memory %", "Power (W)",
+            "Prompt", "Response Preview"
+        ])
+
+        # Data
+        with self.get_connection() as conn:
+            rows = conn.execute("""
+                SELECT
+                    id, model_name, timestamp, status, source,
+                    total_energy_wh, duration_seconds, tokens_per_second, tokens_generated,
+                    quality_score, avg_cpu_usage, avg_memory_usage, avg_power_watts,
+                    prompt, response_preview
+                FROM benchmarks
+                ORDER BY timestamp DESC
+            """).fetchall()
+
+            for row in rows:
+                energy_per_token = None
+                if row["total_energy_wh"] and row["tokens_generated"]:
+                    energy_per_token = row["total_energy_wh"] / row["tokens_generated"]
+
+                writer.writerow([
+                    row["id"],
+                    row["model_name"],
+                    row["timestamp"],
+                    row["status"],
+                    row["source"],
+                    row["total_energy_wh"],
+                    f"{energy_per_token:.6f}" if energy_per_token else "",
+                    row["duration_seconds"],
+                    row["tokens_per_second"],
+                    row["quality_score"],
+                    row["avg_cpu_usage"],
+                    row["avg_memory_usage"],
+                    row["avg_power_watts"],
+                    row["prompt"],
+                    row["response_preview"]
+                ])
+
+        return output.getvalue()
+
+# Initialize database
+db = BenchmarkDB(DB_PATH)
 
 class OllamaBenchmarkRequest(BaseModel):
     models: List[str]  # e.g., ["llama3:8b", "phi3:mini"]
@@ -409,25 +647,35 @@ async def get_optimization():
 @app.get("/benchmarks")
 async def get_benchmarks():
     """Get all stored benchmark results"""
-    return {"results": benchmark_results}
+    return {"results": db.get_all()}
 
 @app.delete("/benchmarks")
 async def clear_benchmarks():
     """Clears all benchmarked results"""
-    benchmark_results.clear()
+    db.delete_all()
     return {"status":"success", "message":"All benchmarks cleared"}
 
 @app.delete("/benchmarks/{benchmark_id}")
 async def delete_benchmark(benchmark_id: str):
     """Delete a specific benchmark by ID"""
-    global benchmark_results
-    initial_count = len(benchmark_results)
-    benchmark_results = [b for b in benchmark_results if b.get("id") != benchmark_id]
-
-    if len(benchmark_results) < initial_count:
+    deleted = db.delete(benchmark_id)
+    if deleted:
         return {"status": "success", "message": f"Benchmark {benchmark_id} deleted"}
     else:
         raise HTTPException(status_code=404, detail="Benchmark not found")
+
+@app.get("/benchmarks/export")
+async def export_benchmarks():
+    """Export all benchmarks to CSV format for analysis"""
+    csv_data = db.export_csv()
+
+    return StreamingResponse(
+        iter([csv_data]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=envirollm_benchmarks_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        }
+    )
 
 @app.get("/benchmarks/compare")
 async def compare_benchmarks(ids: str):
@@ -441,12 +689,8 @@ async def compare_benchmarks(ids: str):
 
     benchmark_ids = [id.strip() for id in ids.split(",")]
 
-    # Find requested benchmarks
-    found_benchmarks = []
-    for bid in benchmark_ids:
-        benchmark = next((b for b in benchmark_results if b.get("id") == bid), None)
-        if benchmark:
-            found_benchmarks.append(benchmark)
+    # Find requested benchmarks from database
+    found_benchmarks = db.get_by_ids(benchmark_ids)
 
     if not found_benchmarks:
         raise HTTPException(status_code=404, detail="No benchmarks found with provided IDs")
@@ -641,8 +885,8 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
                 "response_preview": full_response[:200] + "..." if len(full_response) > 200 else full_response
             }
 
-        # Store result
-        benchmark_results.append(result)
+        # Store result in database
+        db.save(result)
         results.append(result)
 
     return {
@@ -726,11 +970,12 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
             },
             "quality_metrics": quality_metrics,
             "prompt": request.prompt,
-            "response": full_response,  
+            "response": full_response,
             "response_preview": full_response[:200] + "..." if len(full_response) > 200 else full_response
         }
 
-    benchmark_results.append(result)
+    # Store result in database
+    db.save(result)
 
     return {
         "status": "completed",
