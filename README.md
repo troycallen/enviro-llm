@@ -36,6 +36,16 @@ npx envirollm track --auto    # Track LLM processes
 npx envirollm status    # Check if service is running
 npx envirollm benchmark --models llama3:8b,phi3:mini    # Benchmark Ollama models
 npx envirollm benchmark-openai --url http://localhost:1234/v1 --model llama-3-8b    # Benchmark OpenAI-compatible APIs
+npx envirollm clean    # Remove all stored benchmark data
+```
+
+### Data Storage
+
+Benchmark results are stored locally at `~/.envirollm/benchmarks.db`. All data stays on your machine.
+
+Export to CSV via the web interface or remove all data with:
+```bash
+npx envirollm clean
 ```
 
 ### Ollama Benchmarking
