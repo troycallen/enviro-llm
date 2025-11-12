@@ -508,7 +508,7 @@ export default function OptimizePage() {
                             <div className="flex items-center gap-3">
                               <span className="text-lime-400 font-semibold">Prompt:</span>
                               <span className="text-gray-300 italic">
-                                "{group.prompt.length > 100 ? group.prompt.substring(0, 100) + '...' : group.prompt}"
+                                &ldquo;{group.prompt.length > 100 ? group.prompt.substring(0, 100) + '...' : group.prompt}&rdquo;
                               </span>
                               <span className="text-gray-500 text-xs ml-auto">
                                 {group.run_count} run{group.run_count !== 1 ? 's' : ''}
