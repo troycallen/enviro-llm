@@ -8,9 +8,7 @@ const nextConfig: NextConfig = {
     };
     return config;
   },
-  experimental: {
-    serverComponentsExternalPackages: ['cli']
-  }
+  serverExternalPackages: ['cli']
 };
 
 export default nextConfig;
