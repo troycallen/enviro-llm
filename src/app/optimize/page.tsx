@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import NavBar from '../../components/NavBar';
 
@@ -66,6 +66,17 @@ export default function OptimizePage() {
   const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
   const [showComparisonView, setShowComparisonView] = useState(false);
 
+  // Grouped benchmarks state
+  interface PromptGroup {
+    prompt_hash: string;
+    prompt: string;
+    run_count: number;
+    first_run: string;
+    last_run: string;
+    benchmarks: BenchmarkResult[];
+  }
+  const [groupedBenchmarks, setGroupedBenchmarks] = useState<PromptGroup[]>([]);
+
   useEffect(() => {
     // Load benchmarks from localStorage on mount
     const savedBenchmarks = localStorage.getItem('envirollm_benchmarks');
@@ -127,6 +138,21 @@ export default function OptimizePage() {
       }
     };
     checkLmStudio();
+
+    // Fetch grouped benchmarks
+    const fetchGroupedBenchmarks = async () => {
+      try {
+        const response = await fetch('http://localhost:8001/benchmarks/by-prompt');
+        if (response.ok) {
+          const data = await response.json();
+          setGroupedBenchmarks(data.groups || []);
+        }
+      } catch {
+        // Fallback to flat view if grouped endpoint fails
+        console.log('Grouped endpoint not available');
+      }
+    };
+    fetchGroupedBenchmarks();
   }, []);
 
   const clearBenchmarks = async () => {
@@ -175,6 +201,12 @@ export default function OptimizePage() {
           const results = benchData.results || [];
           setBenchmarkResults(results);
           localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
+        }
+        // Refresh grouped benchmarks
+        const groupedRes = await fetch('http://localhost:8001/benchmarks/by-prompt');
+        if (groupedRes.ok) {
+          const groupedData = await groupedRes.json();
+          setGroupedBenchmarks(groupedData.groups || []);
         }
       }
     } catch (err) {
@@ -385,30 +417,31 @@ export default function OptimizePage() {
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-4">
               <h2 className="text-2xl font-bold text-white">Benchmark Results</h2>
+
               {benchmarkResults.length > 0 && (
                 <button
-                  onClick={async () => {
-                    try {
-                      const response = await fetch('http://localhost:8001/benchmarks/export');
-                      if (response.ok) {
-                        const blob = await response.blob();
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `envirollm_benchmarks_${new Date().toISOString().split('T')[0]}.csv`;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        document.body.removeChild(a);
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('http://localhost:8001/benchmarks/export');
+                        if (response.ok) {
+                          const blob = await response.blob();
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `envirollm_benchmarks_${new Date().toISOString().split('T')[0]}.csv`;
+                          document.body.appendChild(a);
+                          a.click();
+                          window.URL.revokeObjectURL(url);
+                          document.body.removeChild(a);
+                        }
+                      } catch (error) {
+                        console.error('Failed to export benchmarks:', error);
                       }
-                    } catch (error) {
-                      console.error('Failed to export benchmarks:', error);
-                    }
-                  }}
-                  className="px-4 py-2 rounded font-medium bg-teal-600 hover:bg-teal-500 text-white transition-colors"
-                >
-                  Export CSV
-                </button>
+                    }}
+                    className="px-4 py-2 rounded font-medium bg-teal-600 hover:bg-teal-500 text-white transition-colors"
+                  >
+                    Export CSV
+                  </button>
               )}
             </div>
             <div className="flex gap-3">
@@ -466,113 +499,236 @@ export default function OptimizePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {benchmarkResults.map((result) => {
-                    // Skip results without metrics (failed benchmarks)
-                    if (!result.metrics) {
-                      return null;
-                    }
+                  {groupedBenchmarks.length > 0 ? (
+                    groupedBenchmarks.map((group) => (
+                      <React.Fragment key={group.prompt_hash}>
+                        {/* Prompt Divider Header */}
+                        <tr className="bg-gray-900/80">
+                          <td colSpan={7} className="p-3 border-t-2 border-lime-400/30">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lime-400 font-semibold">Prompt:</span>
+                              <span className="text-gray-300 italic">
+                                "{group.prompt.length > 100 ? group.prompt.substring(0, 100) + '...' : group.prompt}"
+                              </span>
+                              <span className="text-gray-500 text-xs ml-auto">
+                                {group.run_count} run{group.run_count !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        {/* Benchmark Results for this Prompt */}
+                        {group.benchmarks.map((result) => {
+                          if (!result.metrics) return null;
 
-                    const whPerToken = result.metrics.tokens_generated
-                      ? (result.metrics.total_energy_wh / result.metrics.tokens_generated).toFixed(6)
-                      : 'N/A';
+                          const whPerToken = result.metrics.tokens_generated
+                            ? (result.metrics.total_energy_wh / result.metrics.tokens_generated).toFixed(6)
+                            : 'N/A';
 
-                    const getSourceInfo = (source?: string) => {
-                      switch(source) {
-                        case 'ollama':
-                          return { image: '/ollama.jpg', label: 'Ollama' };
-                        case 'lmstudio':
-                          return { image: '/lm_studio.png', label: 'LM Studio' };
-                        case 'custom':
-                        case 'openai':
-                          return { image: '/api.jpg', label: 'Custom API' };
-                        default:
-                          return { image: null, label: 'Manual' };
-                      }
-                    };
+                          const getSourceInfo = (source?: string) => {
+                            switch(source) {
+                              case 'ollama':
+                                return { image: '/ollama.jpg', label: 'Ollama' };
+                              case 'lmstudio':
+                                return { image: '/lm_studio.png', label: 'LM Studio' };
+                              case 'custom':
+                              case 'openai':
+                                return { image: '/api.jpg', label: 'Custom API' };
+                              default:
+                                return { image: null, label: 'Manual' };
+                            }
+                          };
 
-                    const sourceInfo = getSourceInfo(result.source);
+                          const sourceInfo = getSourceInfo(result.source);
 
-                    const qualityScore = result.quality_metrics?.quality_score;
-                    const qualityDisplay = qualityScore !== undefined ? qualityScore.toFixed(1) : 'N/A';
-                    const qualityColor = qualityScore
-                      ? qualityScore >= 70 ? 'text-green-400'
-                        : qualityScore >= 50 ? 'text-yellow-400'
-                        : 'text-orange-400'
-                      : 'text-gray-400';
+                          const qualityScore = result.quality_metrics?.quality_score;
+                          const qualityDisplay = qualityScore !== undefined ? qualityScore.toFixed(1) : 'N/A';
+                          const qualityColor = qualityScore
+                            ? qualityScore >= 70 ? 'text-green-400'
+                              : qualityScore >= 50 ? 'text-yellow-400'
+                              : 'text-orange-400'
+                            : 'text-gray-400';
 
-                    const isSelected = selectedForComparison.includes(result.id);
+                          const isSelected = selectedForComparison.includes(result.id);
 
-                    return (
-                      <tr
-                        key={result.id}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedForComparison(selectedForComparison.filter(id => id !== result.id));
-                          } else {
-                            setSelectedForComparison([...selectedForComparison, result.id]);
-                          }
-                        }}
-                        className={`border-t border-gray-700 border-l-4 cursor-pointer transition-all ${
-                          isSelected
-                            ? 'bg-lime-900/30 border-l-lime-600'
-                            : 'border-l-gray-800 hover:bg-gray-750'
-                        }`}
-                      >
-                        <td className="py-4 px-3">
-                          <div className="flex items-center gap-2">
-                            {sourceInfo.image ? (
-                              <Image
-                                src={sourceInfo.image}
-                                alt={sourceInfo.label}
-                                width={20}
-                                height={20}
-                                className="rounded"
-                              />
-                            ) : (
-                              <span>⚙️</span>
+                          return (
+                            <tr
+                              key={result.id}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedForComparison(selectedForComparison.filter(id => id !== result.id));
+                                } else {
+                                  setSelectedForComparison([...selectedForComparison, result.id]);
+                                }
+                              }}
+                              className={`border-t border-gray-700 border-l-4 cursor-pointer transition-all ${
+                                isSelected
+                                  ? 'bg-lime-900/30 border-l-lime-600'
+                                  : 'border-l-gray-800 hover:bg-gray-750'
+                              }`}
+                            >
+                              <td className="py-4 px-3">
+                                <div className="flex items-center gap-2">
+                                  {sourceInfo.image ? (
+                                    <Image
+                                      src={sourceInfo.image}
+                                      alt={sourceInfo.label}
+                                      width={20}
+                                      height={20}
+                                      className="rounded"
+                                    />
+                                  ) : (
+                                    <span>⚙️</span>
+                                  )}
+                                  <div className="text-white font-medium">{result.model_name}</div>
+                                </div>
+                              </td>
+                              <td className="py-4 px-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
+                              <td className="py-4 px-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
+                              <td className="py-4 px-3 text-right text-blue-400 font-mono">{result.metrics.duration_seconds.toFixed(1)}</td>
+                              <td className="py-4 px-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
+                              <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
+                                {qualityDisplay}
+                                {qualityScore !== undefined && (
+                                  <span className="text-gray-500 text-xs ml-1">/100</span>
+                                )}
+                              </td>
+                              <td className="py-4 px-3 text-right">
+                                <div className="flex items-center justify-end gap-3">
+                                  {result.response && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedResult(result);
+                                      }}
+                                      className="text-lime-400 hover:text-lime-300 text-xs cursor-pointer"
+                                    >
+                                      View Response
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteBenchmark(result.id);
+                                    }}
+                                    className="text-red-400 hover:text-red-300 text-xl font-bold leading-none cursor-pointer"
+                                    aria-label="Delete benchmark"
+                                    title="Delete this benchmark"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    benchmarkResults.map((result) => {
+                      if (!result.metrics) return null;
+
+                      const whPerToken = result.metrics.tokens_generated
+                        ? (result.metrics.total_energy_wh / result.metrics.tokens_generated).toFixed(6)
+                        : 'N/A';
+
+                      const getSourceInfo = (source?: string) => {
+                        switch(source) {
+                          case 'ollama':
+                            return { image: '/ollama.jpg', label: 'Ollama' };
+                          case 'lmstudio':
+                            return { image: '/lm_studio.png', label: 'LM Studio' };
+                          case 'custom':
+                          case 'openai':
+                            return { image: '/api.jpg', label: 'Custom API' };
+                          default:
+                            return { image: null, label: 'Manual' };
+                        }
+                      };
+
+                      const sourceInfo = getSourceInfo(result.source);
+
+                      const qualityScore = result.quality_metrics?.quality_score;
+                      const qualityDisplay = qualityScore !== undefined ? qualityScore.toFixed(1) : 'N/A';
+                      const qualityColor = qualityScore
+                        ? qualityScore >= 70 ? 'text-green-400'
+                          : qualityScore >= 50 ? 'text-yellow-400'
+                          : 'text-orange-400'
+                        : 'text-gray-400';
+
+                      const isSelected = selectedForComparison.includes(result.id);
+
+                      return (
+                        <tr
+                          key={result.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedForComparison(selectedForComparison.filter(id => id !== result.id));
+                            } else {
+                              setSelectedForComparison([...selectedForComparison, result.id]);
+                            }
+                          }}
+                          className={`border-t border-gray-700 border-l-4 cursor-pointer transition-all ${
+                            isSelected
+                              ? 'bg-lime-900/30 border-l-lime-600'
+                              : 'border-l-gray-800 hover:bg-gray-750'
+                          }`}
+                        >
+                          <td className="py-4 px-3">
+                            <div className="flex items-center gap-2">
+                              {sourceInfo.image ? (
+                                <Image
+                                  src={sourceInfo.image}
+                                  alt={sourceInfo.label}
+                                  width={20}
+                                  height={20}
+                                  className="rounded"
+                                />
+                              ) : (
+                                <span>⚙️</span>
+                              )}
+                              <div className="text-white font-medium">{result.model_name}</div>
+                            </div>
+                          </td>
+                          <td className="py-4 px-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
+                          <td className="py-4 px-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
+                          <td className="py-4 px-3 text-right text-blue-400 font-mono">{result.metrics.duration_seconds.toFixed(1)}</td>
+                          <td className="py-4 px-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
+                          <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
+                            {qualityDisplay}
+                            {qualityScore !== undefined && (
+                              <span className="text-gray-500 text-xs ml-1">/100</span>
                             )}
-                            <div className="text-white font-medium">{result.model_name}</div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
-                        <td className="py-4 px-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
-                        <td className="py-4 px-3 text-right text-blue-400 font-mono">{result.metrics.duration_seconds.toFixed(1)}</td>
-                        <td className="py-4 px-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
-                        <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
-                          {qualityDisplay}
-                          {qualityScore !== undefined && (
-                            <span className="text-gray-500 text-xs ml-1">/100</span>
-                          )}
-                        </td>
-                        <td className="py-4 px-3 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            {result.response && (
+                          </td>
+                          <td className="py-4 px-3 text-right">
+                            <div className="flex items-center justify-end gap-3">
+                              {result.response && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedResult(result);
+                                  }}
+                                  className="text-lime-400 hover:text-lime-300 text-xs cursor-pointer"
+                                >
+                                  View Response
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedResult(result);
+                                  deleteBenchmark(result.id);
                                 }}
-                                className="text-lime-400 hover:text-lime-300 text-xs cursor-pointer"
+                                className="text-red-400 hover:text-red-300 text-xl font-bold leading-none cursor-pointer"
+                                aria-label="Delete benchmark"
+                                title="Delete this benchmark"
                               >
-                                View Response
+                                ×
                               </button>
-                            )}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteBenchmark(result.id);
-                              }}
-                              className="text-red-400 hover:text-red-300 text-xl font-bold leading-none cursor-pointer"
-                              aria-label="Delete benchmark"
-                              title="Delete this benchmark"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -916,7 +1072,7 @@ export default function OptimizePage() {
                       className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
                     />
                     <p className="text-gray-400 text-sm mt-1">
-                      This prompt will be sent to each model during the benchmark.
+                      This prompt will be sent to each model during the benchmark. Identical prompts will be grouped together.
                     </p>
                   </div>
 
@@ -999,7 +1155,7 @@ export default function OptimizePage() {
                       className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
                     />
                     <p className="text-gray-400 text-sm mt-1">
-                      This prompt will be sent to each model during the benchmark.
+                      This prompt will be sent to each model during the benchmark. Identical prompts will be grouped together.
                     </p>
                   </div>
 
@@ -1090,7 +1246,7 @@ export default function OptimizePage() {
                       className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
                     />
                     <p className="text-gray-400 text-sm mt-1">
-                      This prompt will be sent to each model during the benchmark.
+                      This prompt will be sent to each model during the benchmark. Identical prompts will be grouped together.
                     </p>
                   </div>
 
