@@ -16,6 +16,7 @@ from pathlib import Path
 from contextlib import contextmanager
 import io
 import csv
+import hashlib
 
 try:
     import pynvml
@@ -69,45 +70,55 @@ class BenchmarkDB:
     def _init_db(self):
         """Initialize database schema"""
         with self.get_connection() as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS benchmarks (
-                    id TEXT PRIMARY KEY,
-                    model_name TEXT NOT NULL,
-                    timestamp TEXT NOT NULL,
-                    status TEXT,
-                    source TEXT,
-                    prompt TEXT,
-                    response TEXT,
-                    response_preview TEXT,
+            # Check if table exists
+            cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='benchmarks'")
+            table_exists = cursor.fetchone() is not None
 
-                    -- Performance metrics
-                    avg_cpu_usage REAL,
-                    avg_memory_usage REAL,
-                    avg_power_watts REAL,
-                    peak_memory_gb REAL,
-                    total_energy_wh REAL,
-                    duration_seconds REAL,
-                    tokens_generated INTEGER,
-                    tokens_per_second REAL,
-                    prompt_tokens INTEGER,
-                    total_tokens INTEGER,
+            if not table_exists:
+                # Create new table with all columns
+                conn.execute("""
+                    CREATE TABLE benchmarks (
+                        id TEXT PRIMARY KEY,
+                        model_name TEXT NOT NULL,
+                        timestamp TEXT NOT NULL,
+                        status TEXT,
+                        source TEXT,
+                        prompt TEXT,
+                        prompt_hash TEXT,
+                        response TEXT,
+                        response_preview TEXT,
 
-                    -- Quality metrics
-                    char_count INTEGER,
-                    word_count INTEGER,
-                    unique_words INTEGER,
-                    unique_word_ratio REAL,
-                    avg_word_length REAL,
-                    sentence_count INTEGER,
-                    quality_score REAL,
+                        -- Performance metrics
+                        avg_cpu_usage REAL,
+                        avg_memory_usage REAL,
+                        avg_power_watts REAL,
+                        peak_memory_gb REAL,
+                        total_energy_wh REAL,
+                        duration_seconds REAL,
+                        tokens_generated INTEGER,
+                        tokens_per_second REAL,
+                        prompt_tokens INTEGER,
+                        total_tokens INTEGER,
 
-                    -- Error info
-                    error TEXT,
+                        -- Quality metrics
+                        char_count INTEGER,
+                        word_count INTEGER,
+                        unique_words INTEGER,
+                        unique_word_ratio REAL,
+                        avg_word_length REAL,
+                        sentence_count INTEGER,
+                        quality_score REAL,
 
-                    -- Full JSON for compatibility
-                    full_data TEXT
-                )
-            """)
+                        -- Error info
+                        error TEXT,
+
+                        -- Full JSON for compatibility
+                        full_data TEXT
+                    )
+                """)
+            else:
+                # Table exists, run migration to add new columns
+                self._migrate_schema(conn)
 
             # Create index for faster queries
             conn.execute("""
@@ -118,30 +129,60 @@ class BenchmarkDB:
                 CREATE INDEX IF NOT EXISTS idx_model
                 ON benchmarks(model_name)
             """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_prompt_hash
+                ON benchmarks(prompt_hash)
+            """)
+
+    def _migrate_schema(self, conn):
+        """Migrate existing database to add new columns"""
+        # Check if columns exist
+        cursor = conn.execute("PRAGMA table_info(benchmarks)")
+        columns = {row[1] for row in cursor.fetchall()}
+
+        # Add prompt_hash if missing
+        if 'prompt_hash' not in columns:
+            conn.execute("ALTER TABLE benchmarks ADD COLUMN prompt_hash TEXT")
+            print("Added prompt_hash column to database")
+
+        # Backfill prompt_hash for existing records
+        rows = conn.execute("SELECT id, prompt FROM benchmarks WHERE prompt_hash IS NULL AND prompt IS NOT NULL").fetchall()
+        for row in rows:
+            prompt_hash = hashlib.sha256(row[1].encode()).hexdigest()[:16]
+            conn.execute("UPDATE benchmarks SET prompt_hash = ? WHERE id = ?", (prompt_hash, row[0]))
+
+        if rows:
+            print(f"Backfilled prompt_hash for {len(rows)} existing benchmarks")
 
     def save(self, benchmark: dict):
         """Save a benchmark result"""
         metrics = benchmark.get("metrics", {})
         quality = benchmark.get("quality_metrics", {})
 
+        # Calculate prompt hash
+        prompt = benchmark.get("prompt", "")
+        prompt_hash = hashlib.sha256(prompt.encode()).hexdigest()[:16] if prompt else None
+
         with self.get_connection() as conn:
             conn.execute("""
                 INSERT INTO benchmarks (
-                    id, model_name, timestamp, status, source, prompt, response, response_preview,
+                    id, model_name, timestamp, status, source, prompt, prompt_hash,
+                    response, response_preview,
                     avg_cpu_usage, avg_memory_usage, avg_power_watts, peak_memory_gb,
                     total_energy_wh, duration_seconds, tokens_generated, tokens_per_second,
                     prompt_tokens, total_tokens,
                     char_count, word_count, unique_words, unique_word_ratio,
                     avg_word_length, sentence_count, quality_score,
                     error, full_data
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 benchmark.get("id"),
                 benchmark.get("model_name"),
                 benchmark.get("timestamp"),
                 benchmark.get("status"),
                 benchmark.get("source"),
-                benchmark.get("prompt"),
+                prompt,
+                prompt_hash,
                 benchmark.get("response"),
                 benchmark.get("response_preview"),
                 metrics.get("avg_cpu_usage"),
@@ -204,6 +245,47 @@ class BenchmarkDB:
         """Delete all benchmarks"""
         with self.get_connection() as conn:
             conn.execute("DELETE FROM benchmarks")
+
+    def get_grouped_by_prompt(self) -> dict:
+        """Get benchmarks grouped by prompt_hash with statistics"""
+        with self.get_connection() as conn:
+            # Get unique prompts with counts
+            prompt_groups = conn.execute("""
+                SELECT
+                    prompt_hash,
+                    prompt,
+                    COUNT(*) as run_count,
+                    MIN(timestamp) as first_run,
+                    MAX(timestamp) as last_run
+                FROM benchmarks
+                WHERE prompt_hash IS NOT NULL
+                GROUP BY prompt_hash
+                ORDER BY last_run DESC
+            """).fetchall()
+
+            result = []
+            for group in prompt_groups:
+                prompt_hash = group["prompt_hash"]
+
+                # Get all benchmarks for this prompt
+                benchmarks = conn.execute("""
+                    SELECT full_data FROM benchmarks
+                    WHERE prompt_hash = ?
+                    ORDER BY timestamp DESC
+                """, (prompt_hash,)).fetchall()
+
+                benchmarks_list = [json.loads(row["full_data"]) for row in benchmarks]
+
+                result.append({
+                    "prompt_hash": prompt_hash,
+                    "prompt": group["prompt"],
+                    "run_count": group["run_count"],
+                    "first_run": group["first_run"],
+                    "last_run": group["last_run"],
+                    "benchmarks": benchmarks_list
+                })
+
+            return {"groups": result, "total_groups": len(result)}
 
     def export_csv(self) -> str:
         """Export all benchmarks to CSV format"""
@@ -648,6 +730,11 @@ async def get_optimization():
 async def get_benchmarks():
     """Get all stored benchmark results"""
     return {"results": db.get_all()}
+
+@app.get("/benchmarks/by-prompt")
+async def get_benchmarks_by_prompt():
+    """Get benchmarks grouped by prompt with statistics"""
+    return db.get_grouped_by_prompt()
 
 @app.delete("/benchmarks")
 async def clear_benchmarks():
