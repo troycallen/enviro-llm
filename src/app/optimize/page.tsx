@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import NavBar from '../../components/NavBar';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis, Cell } from 'recharts';
 
 interface BenchmarkResult {
   id: string;
@@ -76,6 +77,9 @@ export default function OptimizePage() {
     benchmarks: BenchmarkResult[];
   }
   const [groupedBenchmarks, setGroupedBenchmarks] = useState<PromptGroup[]>([]);
+
+  // Visualization state
+  const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
 
   useEffect(() => {
     // Load benchmarks from localStorage on mount
@@ -740,6 +744,183 @@ export default function OptimizePage() {
               )}
             </div>
           )}
+        </div>
+
+        {/* Energy Visualizations */}
+        <div className="mb-8">
+          <div className="bg-gray-800/90 border border-gray-700 rounded-lg p-6">
+            <h2 className="text-2xl font-bold text-white mb-4">Energy Comparison</h2>
+
+            {groupedBenchmarks.length > 0 ? (
+              <>
+                {/* Prompt Toggles */}
+                <div className="mb-6">
+                  <p className="text-gray-400 text-sm mb-3">Select prompts to compare:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {groupedBenchmarks.map((group) => (
+                      <button
+                        key={group.prompt_hash}
+                        onClick={() => {
+                          if (selectedPrompts.includes(group.prompt_hash)) {
+                            setSelectedPrompts(selectedPrompts.filter(h => h !== group.prompt_hash));
+                          } else {
+                            setSelectedPrompts([...selectedPrompts, group.prompt_hash]);
+                          }
+                        }}
+                        className={`px-4 py-2 rounded text-sm transition-colors ${
+                          selectedPrompts.includes(group.prompt_hash)
+                            ? 'bg-lime-600 text-white'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        {group.prompt.length > 50 ? group.prompt.substring(0, 50) + '...' : group.prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Chart */}
+                {selectedPrompts.length > 0 ? (
+                <>
+                  <div className="mb-4 text-center">
+                    <p className="text-gray-300 text-sm">
+                      <span className="text-lime-400 font-semibold">Best models</span> are in the bottom-right (fast + efficient)
+                    </p>
+                  </div>
+                  <ResponsiveContainer width="100%" height={500}>
+                    <ScatterChart
+                      margin={{ top: 20, right: 80, bottom: 20, left: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis
+                        type="number"
+                        dataKey="speed"
+                        name="Speed"
+                        stroke="#9CA3AF"
+                        tick={{ fill: '#9CA3AF' }}
+                        label={{ value: 'Speed (tokens/sec)', position: 'insideBottom', offset: -10, fill: '#9CA3AF' }}
+                      />
+                      <YAxis
+                        type="number"
+                        dataKey="whPerToken"
+                        name="Efficiency"
+                        stroke="#9CA3AF"
+                        tick={{ fill: '#9CA3AF' }}
+                        label={{ value: 'Energy per Token (Wh)', angle: -90, position: 'insideLeft', dx: -30, fill: '#9CA3AF', style: { textAnchor: 'middle' } }}
+                      />
+                      <ZAxis range={[100, 400]} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1F2937',
+                          border: '1px solid #374151',
+                          borderRadius: '6px',
+                          color: '#F3F4F6'
+                        }}
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-gray-800 border border-gray-700 rounded p-3">
+                                <p className="text-white font-semibold mb-1">{data.fullModel}</p>
+                                <p className="text-gray-300 text-xs mb-2">Prompt: {data.fullPrompt.substring(0, 60)}...</p>
+                                <p className="text-purple-400">Speed: {data.speed.toFixed(2)} tok/s</p>
+                                <p className="text-green-400">Efficiency: {data.whPerToken.toFixed(6)} Wh/tok</p>
+                                <p className="text-yellow-400">Total Energy: {data.totalEnergy.toFixed(4)} Wh</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Scatter
+                        data={(() => {
+                          const selectedGroups = groupedBenchmarks.filter(g => selectedPrompts.includes(g.prompt_hash));
+                          const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+                          return selectedGroups.flatMap((g, groupIdx) =>
+                            g.benchmarks
+                              .filter(b => b.metrics.tokens_per_second && b.metrics.tokens_generated)
+                              .map(b => ({
+                                speed: b.metrics.tokens_per_second || 0,
+                                whPerToken: b.metrics.tokens_generated
+                                  ? parseFloat((b.metrics.total_energy_wh / b.metrics.tokens_generated).toFixed(6))
+                                  : 0,
+                                totalEnergy: b.metrics.total_energy_wh,
+                                fullModel: b.model_name,
+                                fullPrompt: g.prompt,
+                                color: colors[groupIdx % colors.length]
+                              }))
+                          );
+                        })()}
+                        fill="#10B981"
+                      >
+                        {(() => {
+                          const selectedGroups = groupedBenchmarks.filter(g => selectedPrompts.includes(g.prompt_hash));
+                          const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+                          return selectedGroups.flatMap((g, groupIdx) =>
+                            g.benchmarks
+                              .filter(b => b.metrics.tokens_per_second && b.metrics.tokens_generated)
+                              .map((b, idx) => (
+                                <Cell key={`cell-${groupIdx}-${idx}`} fill={colors[groupIdx % colors.length]} />
+                              ))
+                          );
+                        })()}
+                      </Scatter>
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                  <div className="mt-4 flex flex-wrap gap-3 justify-center">
+                    {groupedBenchmarks
+                      .filter(g => selectedPrompts.includes(g.prompt_hash))
+                      .map((g, idx) => {
+                        const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+                        return (
+                          <div key={g.prompt_hash} className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: colors[idx % colors.length] }}
+                            ></div>
+                            <span className="text-gray-300 text-xs">
+                              {g.prompt.length > 40 ? g.prompt.substring(0, 40) + '...' : g.prompt}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </>
+                ) : (
+                  <div className="text-center py-12 text-gray-400">
+                    Select at least one prompt to view the comparison
+                  </div>
+                )}
+              </>
+            ) : benchmarkResults.length === 0 ? (
+              <div className="text-center py-32">
+                <ResponsiveContainer width="100%" height={400}>
+                  <ScatterChart margin={{ top: 20, right: 80, bottom: 20, left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis
+                      type="number"
+                      stroke="#9CA3AF"
+                      tick={{ fill: '#9CA3AF' }}
+                      label={{ value: 'Speed (tokens/sec)', position: 'insideBottom', offset: -10, fill: '#9CA3AF' }}
+                    />
+                    <YAxis
+                      type="number"
+                      stroke="#9CA3AF"
+                      tick={{ fill: '#9CA3AF' }}
+                      label={{ value: 'Wh per Token', angle: -90, position: 'insideLeft', fill: '#9CA3AF' }}
+                    />
+                  </ScatterChart>
+                </ResponsiveContainer>
+                <p className="text-gray-400 mt-4">
+                  Run benchmarks to see energy efficiency comparisons
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-gray-400">
+                Select at least one prompt to view the comparison
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Comparison View Modal */}
