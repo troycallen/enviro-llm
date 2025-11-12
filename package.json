@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
-    "envirollm": "^1.1.3",
+    "envirollm": "^1.1.4",
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0"
