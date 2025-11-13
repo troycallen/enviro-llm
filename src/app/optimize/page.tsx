@@ -789,7 +789,7 @@ export default function OptimizePage() {
                   </div>
                   <ResponsiveContainer width="100%" height={500}>
                     <ScatterChart
-                      margin={{ top: 20, right: 80, bottom: 20, left: 60 }}
+                      margin={{ top: 30, right: 60, bottom: 30, left: 60 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                       <XAxis
@@ -798,7 +798,7 @@ export default function OptimizePage() {
                         name="Speed"
                         stroke="#9CA3AF"
                         tick={{ fill: '#9CA3AF' }}
-                        label={{ value: 'Speed (tokens/sec)', position: 'insideBottom', offset: -10, fill: '#9CA3AF' }}
+                        label={{ value: 'Speed (tokens/sec)', position: 'insideBottom', dy: 30, fill: '#9CA3AF' }}
                       />
                       <YAxis
                         type="number"
@@ -808,7 +808,7 @@ export default function OptimizePage() {
                         tick={{ fill: '#9CA3AF' }}
                         label={{ value: 'Energy per Token (Wh)', angle: -90, position: 'insideLeft', dx: -30, fill: '#9CA3AF', style: { textAnchor: 'middle' } }}
                       />
-                      <ZAxis range={[100, 400]} />
+                      <ZAxis range={[200, 600]} />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: '#1F2937',
