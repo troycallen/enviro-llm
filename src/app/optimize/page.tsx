@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import NavBar from '../../components/NavBar';
-import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis, Cell } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis, Cell, LabelList } from 'recharts';
 
 interface BenchmarkResult {
   id: string;
@@ -80,6 +80,9 @@ export default function OptimizePage() {
 
   // Visualization state
   const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
+
+  // Color mapping for prompts (keep consistent colors)
+  const promptColors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   useEffect(() => {
     // Load benchmarks from localStorage on mount
@@ -769,25 +772,33 @@ export default function OptimizePage() {
                 <div className="mb-6">
                   <p className="text-gray-400 text-sm mb-3">Select prompts to compare:</p>
                   <div className="flex flex-wrap gap-2">
-                    {groupedBenchmarks.map((group) => (
-                      <button
-                        key={group.prompt_hash}
-                        onClick={() => {
-                          if (selectedPrompts.includes(group.prompt_hash)) {
-                            setSelectedPrompts(selectedPrompts.filter(h => h !== group.prompt_hash));
-                          } else {
-                            setSelectedPrompts([...selectedPrompts, group.prompt_hash]);
-                          }
-                        }}
-                        className={`px-4 py-2 rounded text-sm transition-colors ${
-                          selectedPrompts.includes(group.prompt_hash)
-                            ? 'bg-lime-600 text-white'
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        }`}
-                      >
-                        {group.prompt.length > 50 ? group.prompt.substring(0, 50) + '...' : group.prompt}
-                      </button>
-                    ))}
+                    {groupedBenchmarks.map((group, idx) => {
+                      const color = promptColors[idx % promptColors.length];
+                      const isSelected = selectedPrompts.includes(group.prompt_hash);
+                      return (
+                        <button
+                          key={group.prompt_hash}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedPrompts(selectedPrompts.filter(h => h !== group.prompt_hash));
+                            } else {
+                              setSelectedPrompts([...selectedPrompts, group.prompt_hash]);
+                            }
+                          }}
+                          className={`px-4 py-2 rounded text-sm transition-colors border-2 ${
+                            isSelected
+                              ? 'text-white'
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600 border-gray-700'
+                          }`}
+                          style={isSelected ? {
+                            backgroundColor: color,
+                            borderColor: color
+                          } : {}}
+                        >
+                          {group.prompt.length > 50 ? group.prompt.substring(0, 50) + '...' : group.prompt}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -844,58 +855,64 @@ export default function OptimizePage() {
                           return null;
                         }}
                       />
-                      <Scatter
-                        data={(() => {
-                          const selectedGroups = groupedBenchmarks.filter(g => selectedPrompts.includes(g.prompt_hash));
-                          const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-                          return selectedGroups.flatMap((g, groupIdx) =>
-                            g.benchmarks
-                              .filter(b => b.metrics.tokens_per_second && b.metrics.tokens_generated)
-                              .map(b => ({
-                                speed: b.metrics.tokens_per_second || 0,
-                                whPerToken: b.metrics.tokens_generated
-                                  ? parseFloat((b.metrics.total_energy_wh / b.metrics.tokens_generated).toFixed(6))
-                                  : 0,
-                                totalEnergy: b.metrics.total_energy_wh,
-                                fullModel: b.model_name,
-                                fullPrompt: g.prompt,
-                                color: colors[groupIdx % colors.length]
-                              }))
-                          );
-                        })()}
-                        fill="#10B981"
-                      >
-                        {(() => {
-                          const selectedGroups = groupedBenchmarks.filter(g => selectedPrompts.includes(g.prompt_hash));
-                          const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-                          return selectedGroups.flatMap((g, groupIdx) =>
-                            g.benchmarks
-                              .filter(b => b.metrics.tokens_per_second && b.metrics.tokens_generated)
-                              .map((b, idx) => (
-                                <Cell key={`cell-${groupIdx}-${idx}`} fill={colors[groupIdx % colors.length]} />
-                              ))
-                          );
-                        })()}
-                      </Scatter>
+                      {(() => {
+                        // Create a map of prompt_hash to original index for consistent coloring
+                        const promptColorMap = new Map(
+                          groupedBenchmarks.map((g, idx) => [g.prompt_hash, promptColors[idx % promptColors.length]])
+                        );
+
+                        const selectedGroups = groupedBenchmarks.filter(g => selectedPrompts.includes(g.prompt_hash));
+                        const allData = selectedGroups.flatMap((g) =>
+                          g.benchmarks
+                            .filter(b => b.metrics.tokens_per_second && b.metrics.tokens_generated)
+                            .map(b => ({
+                              speed: b.metrics.tokens_per_second || 0,
+                              whPerToken: b.metrics.tokens_generated
+                                ? parseFloat((b.metrics.total_energy_wh / b.metrics.tokens_generated).toFixed(6))
+                                : 0,
+                              totalEnergy: b.metrics.total_energy_wh,
+                              fullModel: b.model_name,
+                              displayName: b.model_name.length > 15 ? b.model_name.substring(0, 15) + '...' : b.model_name,
+                              fullPrompt: g.prompt,
+                              color: promptColorMap.get(g.prompt_hash) || '#10B981'
+                            }))
+                        );
+                        const totalBenchmarks = allData.length;
+
+                        return (
+                          <Scatter data={allData} fill="#10B981">
+                            {allData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                            {totalBenchmarks <= 8 && (
+                              <LabelList
+                                dataKey="displayName"
+                                position="right"
+                                style={{ fill: '#F3F4F6', fontSize: '11px' }}
+                                offset={8}
+                              />
+                            )}
+                          </Scatter>
+                        );
+                      })()}
                     </ScatterChart>
                   </ResponsiveContainer>
                   <div className="mt-4 flex flex-wrap gap-3 justify-center">
-                    {groupedBenchmarks
-                      .filter(g => selectedPrompts.includes(g.prompt_hash))
-                      .map((g, idx) => {
-                        const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-                        return (
-                          <div key={g.prompt_hash} className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: colors[idx % colors.length] }}
-                            ></div>
-                            <span className="text-gray-300 text-xs">
-                              {g.prompt.length > 40 ? g.prompt.substring(0, 40) + '...' : g.prompt}
-                            </span>
-                          </div>
-                        );
-                      })}
+                    {groupedBenchmarks.map((g, idx) => {
+                      const color = promptColors[idx % promptColors.length];
+                      const isSelected = selectedPrompts.includes(g.prompt_hash);
+                      return (
+                        <div key={g.prompt_hash} className="flex items-center gap-2" style={{ opacity: isSelected ? 1 : 0.3 }}>
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: color }}
+                          ></div>
+                          <span className="text-gray-300 text-xs">
+                            {g.prompt.length > 40 ? g.prompt.substring(0, 40) + '...' : g.prompt}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
                 ) : (
