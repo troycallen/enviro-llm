@@ -272,6 +272,12 @@ export default function OptimizePage() {
         setBenchmarkResults(results);
         localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
       }
+      // Refresh grouped benchmarks
+      const groupedRes = await fetch('http://localhost:8001/benchmarks/by-prompt');
+      if (groupedRes.ok) {
+        const groupedData = await groupedRes.json();
+        setGroupedBenchmarks(groupedData.groups || []);
+      }
     } catch (err) {
       console.error('Benchmark failed:', err);
       alert('Benchmark failed. Make sure LM Studio server is running.');
@@ -309,6 +315,12 @@ export default function OptimizePage() {
           const results = benchData.results || [];
           setBenchmarkResults(results);
           localStorage.setItem('envirollm_benchmarks', JSON.stringify(results));
+        }
+        // Refresh grouped benchmarks
+        const groupedRes = await fetch('http://localhost:8001/benchmarks/by-prompt');
+        if (groupedRes.ok) {
+          const groupedData = await groupedRes.json();
+          setGroupedBenchmarks(groupedData.groups || []);
         }
       }
     } catch (err) {
