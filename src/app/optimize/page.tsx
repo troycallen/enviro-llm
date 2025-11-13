@@ -169,6 +169,7 @@ export default function OptimizePage() {
       });
       if (response.ok) {
         setBenchmarkResults([]);
+        setGroupedBenchmarks([]);
         localStorage.removeItem('envirollm_benchmarks');
       }
     } catch {
@@ -176,10 +177,29 @@ export default function OptimizePage() {
     }
   };
 
-  const deleteBenchmark = (id: string) => {
-    const updatedResults = benchmarkResults.filter(result => result.id !== id);
-    setBenchmarkResults(updatedResults);
-    localStorage.setItem('envirollm_benchmarks', JSON.stringify(updatedResults));
+  const deleteBenchmark = async (id: string) => {
+    try {
+      // Delete from backend
+      const response = await fetch(`http://localhost:8001/benchmarks/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        // Update local state
+        const updatedResults = benchmarkResults.filter(result => result.id !== id);
+        setBenchmarkResults(updatedResults);
+        localStorage.setItem('envirollm_benchmarks', JSON.stringify(updatedResults));
+
+        // Refresh grouped benchmarks
+        const groupedRes = await fetch('http://localhost:8001/benchmarks/by-prompt');
+        if (groupedRes.ok) {
+          const groupedData = await groupedRes.json();
+          setGroupedBenchmarks(groupedData.groups || []);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete benchmark:', err);
+    }
   };
 
   const runOllamaBenchmark = async () => {
