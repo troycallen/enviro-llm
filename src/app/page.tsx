@@ -82,7 +82,7 @@ export default function Home() {
         </section>
 
         <div className="text-center mb-6">
-          <p className="text-gray-300 text-lg">Use the CLI directly or explore the dashboards:</p>
+          <p className="text-gray-300 text-lg">Use the CLI directly or alongside the dashboards:</p>
         </div>
 
         <main className="grid md:grid-cols-2 gap-8">
@@ -92,7 +92,7 @@ export default function Home() {
             </h2>
             <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
               Track your system performance across setups.
-              Monitor CPU, GPU, and memory usage in real-time and get optimization recommendations.
+              Monitor CPU, GPU, and memory usage in real-time and get generic recommendations.
             </p>
             <div className="flex items-center gap-4">
               <a
@@ -121,7 +121,7 @@ export default function Home() {
             </h2>
             <p className="text-gray-300 mb-8 leading-relaxed flex-grow text-lg">
               Benchmark local LLMs and compare performance.
-              Test inference speed, resource usage, and energy efficiency across different models.
+              Test inference speed, resource usage, and energy efficiency across different models and prompts.
             </p>
             <a
               href="/optimize"
