@@ -1003,6 +1003,83 @@ export default function OptimizePage() {
           </div>
         </div>
 
+        {/* Model Recommendations */}
+        {benchmarkResults.length > 0 && (() => {
+          // Calculate recommendations
+          const resultsWithMetrics = benchmarkResults.filter(r => r.metrics && r.quality_metrics?.quality_score);
+
+          if (resultsWithMetrics.length === 0) return null;
+
+          // Best overall (quality per Wh - higher is better)
+          const bestOverall = [...resultsWithMetrics].sort((a, b) => {
+            const efficiencyA = (a.quality_metrics?.quality_score || 0) / a.metrics.total_energy_wh;
+            const efficiencyB = (b.quality_metrics?.quality_score || 0) / b.metrics.total_energy_wh;
+            return efficiencyB - efficiencyA;
+          })[0];
+
+          // Most energy efficient (lowest Wh)
+          const mostEfficient = [...resultsWithMetrics].sort((a, b) =>
+            a.metrics.total_energy_wh - b.metrics.total_energy_wh
+          )[0];
+
+          // Best quality (highest quality score)
+          const bestQuality = [...resultsWithMetrics].sort((a, b) =>
+            (b.quality_metrics?.quality_score || 0) - (a.quality_metrics?.quality_score || 0)
+          )[0];
+
+          // Fastest (highest tokens/second)
+          const fastest = [...resultsWithMetrics]
+            .filter(r => r.metrics.tokens_per_second)
+            .sort((a, b) => (b.metrics.tokens_per_second || 0) - (a.metrics.tokens_per_second || 0))[0];
+
+          return (
+            <div className="mb-8">
+              <div className="bg-gray-800/90 border border-gray-700 rounded-lg p-6">
+                <h2 className="text-2xl font-bold text-white mb-4">Model Recommendations</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Best Overall */}
+                  <div className="bg-gray-900/50 border-2 border-yellow-600/50 rounded p-4">
+                    <div className="text-yellow-400 text-sm mb-2 font-semibold">Best Overall</div>
+                    <div className="text-white font-semibold">{bestOverall.model_name}</div>
+                    <div className="text-yellow-400 text-sm mt-2 font-mono">
+                      {((bestOverall.quality_metrics?.quality_score || 0) / bestOverall.metrics.total_energy_wh).toFixed(1)} quality/Wh
+                    </div>
+                  </div>
+
+                  {/* Most Energy Efficient */}
+                  <div className="bg-gray-900/50 border-2 border-green-600/50 rounded p-4">
+                    <div className="text-green-400 text-sm mb-2 font-semibold">Most Energy Efficient</div>
+                    <div className="text-white font-semibold">{mostEfficient.model_name}</div>
+                    <div className="text-green-400 text-sm mt-2 font-mono">
+                      {mostEfficient.metrics.total_energy_wh.toFixed(4)} Wh
+                    </div>
+                  </div>
+
+                  {/* Best Quality */}
+                  <div className="bg-gray-900/50 border-2 border-blue-600/50 rounded p-4">
+                    <div className="text-blue-400 text-sm mb-2 font-semibold">Best Quality</div>
+                    <div className="text-white font-semibold">{bestQuality.model_name}</div>
+                    <div className="text-blue-400 text-sm mt-2 font-mono">
+                      {bestQuality.quality_metrics?.quality_score?.toFixed(1)}/100
+                    </div>
+                  </div>
+
+                  {/* Fastest */}
+                  {fastest && (
+                    <div className="bg-gray-900/50 border-2 border-purple-600/50 rounded p-4">
+                      <div className="text-purple-400 text-sm mb-2 font-semibold">Fastest</div>
+                      <div className="text-white font-semibold">{fastest.model_name}</div>
+                      <div className="text-purple-400 text-sm mt-2 font-mono">
+                        {fastest.metrics.tokens_per_second?.toFixed(1)} tok/s
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Comparison View Modal */}
         {showComparisonView && selectedForComparison.length >= 2 && (
           <div
