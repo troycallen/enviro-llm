@@ -385,27 +385,24 @@ export default function OptimizePage() {
 
         {/* Unified Benchmark Launcher */}
         <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-white">Run Benchmark</h2>
+            <button
+              onClick={() => {
+                setShowBenchmarkModal(true);
+                setActiveTab(ollamaAvailable ? 'ollama' : lmStudioAvailable ? 'lmstudio' : 'custom');
+              }}
+              disabled={isRunningBenchmark}
+              className={`px-4 py-2 rounded font-medium ${
+                isRunningBenchmark
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  : 'bg-teal-600 hover:bg-teal-500 text-white'
+              }`}
+            >
+              {isRunningBenchmark ? 'Running...' : 'New Benchmark'}
+            </button>
+          </div>
           <div className="bg-gray-800/90 border border-gray-700 rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Run Benchmark</h2>
-                <p className="text-gray-400">Select your benchmarking method below</p>
-              </div>
-              <button
-                onClick={() => {
-                  setShowBenchmarkModal(true);
-                  setActiveTab(ollamaAvailable ? 'ollama' : lmStudioAvailable ? 'lmstudio' : 'custom');
-                }}
-                disabled={isRunningBenchmark}
-                className={`px-6 py-3 rounded font-bold text-lg ${
-                  isRunningBenchmark
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-teal-600 hover:bg-teal-500 text-white'
-                }`}
-              >
-                {isRunningBenchmark ? 'Running...' : 'New Benchmark'}
-              </button>
-            </div>
 
             <div className="grid grid-cols-3 gap-4 text-sm">
               <div className="bg-gray-900 border border-gray-700 p-4 rounded">
@@ -814,9 +811,8 @@ export default function OptimizePage() {
 
         {/* Energy Visualizations */}
         <div className="mb-8">
+          <h2 className="text-2xl font-bold text-white mb-4">Energy Comparison</h2>
           <div className="bg-gray-800/90 border border-gray-700 rounded-lg p-6">
-            <h2 className="text-2xl font-bold text-white mb-4">Energy Comparison</h2>
-
             {groupedBenchmarks.length > 0 ? (
               <>
                 {/* Prompt Toggles */}
@@ -1034,8 +1030,8 @@ export default function OptimizePage() {
 
           return (
             <div className="mb-8">
+              <h2 className="text-2xl font-bold text-white mb-4">Model Recommendations</h2>
               <div className="bg-gray-800/90 border border-gray-700 rounded-lg p-6">
-                <h2 className="text-2xl font-bold text-white mb-4">Model Recommendations</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Best Overall */}
                   <div className="bg-gray-900/50 border-2 border-yellow-600/50 rounded p-4">
@@ -1055,15 +1051,6 @@ export default function OptimizePage() {
                     </div>
                   </div>
 
-                  {/* Best Quality */}
-                  <div className="bg-gray-900/50 border-2 border-blue-600/50 rounded p-4">
-                    <div className="text-blue-400 text-sm mb-2 font-semibold">Best Quality</div>
-                    <div className="text-white font-semibold">{bestQuality.model_name}</div>
-                    <div className="text-blue-400 text-sm mt-2 font-mono">
-                      {bestQuality.quality_metrics?.quality_score?.toFixed(1)}/100
-                    </div>
-                  </div>
-
                   {/* Fastest */}
                   {fastest && (
                     <div className="bg-gray-900/50 border-2 border-purple-600/50 rounded p-4">
@@ -1074,6 +1061,15 @@ export default function OptimizePage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Best Quality */}
+                  <div className="bg-gray-900/50 border-2 border-green-600/50 rounded p-4">
+                    <div className="text-green-400 text-sm mb-2 font-semibold">Best Quality</div>
+                    <div className="text-white font-semibold">{bestQuality.model_name}</div>
+                    <div className="text-green-400 text-sm mt-2 font-mono">
+                      {bestQuality.quality_metrics?.quality_score?.toFixed(1)}/100
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
