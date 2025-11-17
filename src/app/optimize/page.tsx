@@ -629,7 +629,7 @@ export default function OptimizePage() {
                               <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
                                 <div className="flex items-center justify-end gap-1">
                                   {result.quality_metrics?.quality_method === 'llm_judge' && (
-                                    <span className="text-lime-400 text-xs" title="Evaluated by LLM Judge">✓</span>
+                                    <span className="text-gray-400 text-xs" title="Evaluated by LLM Judge">[J]</span>
                                   )}
                                   <span>
                                     {qualityDisplay}
@@ -743,7 +743,7 @@ export default function OptimizePage() {
                           <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
                             <div className="flex items-center justify-end gap-1">
                               {result.quality_metrics?.quality_method === 'llm_judge' && (
-                                <span className="text-lime-400 text-xs" title="Evaluated by LLM Judge">✓</span>
+                                <span className="text-gray-400 text-xs" title="Evaluated by LLM Judge">[J]</span>
                               )}
                               <span>
                                 {qualityDisplay}
