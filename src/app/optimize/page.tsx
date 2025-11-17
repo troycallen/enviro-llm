@@ -29,6 +29,7 @@ interface BenchmarkResult {
     avg_word_length: number;
     sentence_count: number;
     quality_score: number;
+    quality_method?: string;
   };
   response?: string;
   response_preview?: string;
@@ -626,10 +627,17 @@ export default function OptimizePage() {
                               <td className="py-4 px-3 text-right text-blue-400 font-mono">{result.metrics.duration_seconds.toFixed(1)}</td>
                               <td className="py-4 px-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
                               <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
-                                {qualityDisplay}
-                                {qualityScore !== undefined && (
-                                  <span className="text-gray-500 text-xs ml-1">/100</span>
-                                )}
+                                <div className="flex items-center justify-end gap-1">
+                                  {result.quality_metrics?.quality_method === 'llm_judge' && (
+                                    <span className="text-lime-400 text-xs" title="Evaluated by LLM Judge">✓</span>
+                                  )}
+                                  <span>
+                                    {qualityDisplay}
+                                    {qualityScore !== undefined && (
+                                      <span className="text-gray-500 text-xs ml-1">/100</span>
+                                    )}
+                                  </span>
+                                </div>
                               </td>
                               <td className="py-4 px-3 text-right">
                                 <div className="flex items-center justify-end gap-3">
@@ -733,10 +741,17 @@ export default function OptimizePage() {
                           <td className="py-4 px-3 text-right text-blue-400 font-mono">{result.metrics.duration_seconds.toFixed(1)}</td>
                           <td className="py-4 px-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
                           <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
-                            {qualityDisplay}
-                            {qualityScore !== undefined && (
-                              <span className="text-gray-500 text-xs ml-1">/100</span>
-                            )}
+                            <div className="flex items-center justify-end gap-1">
+                              {result.quality_metrics?.quality_method === 'llm_judge' && (
+                                <span className="text-lime-400 text-xs" title="Evaluated by LLM Judge">✓</span>
+                              )}
+                              <span>
+                                {qualityDisplay}
+                                {qualityScore !== undefined && (
+                                  <span className="text-gray-500 text-xs ml-1">/100</span>
+                                )}
+                              </span>
+                            </div>
                           </td>
                           <td className="py-4 px-3 text-right">
                             <div className="flex items-center justify-end gap-3">
@@ -1064,7 +1079,18 @@ export default function OptimizePage() {
                       {/* Quality Metrics */}
                       {result.quality_metrics && (
                         <div className="mb-4 p-3 bg-gray-800 rounded border border-gray-700">
-                          <p className="text-xs text-gray-400 mb-2">Quality Score</p>
+                          <div className="flex justify-between items-center mb-2">
+                            <p className="text-xs text-gray-400">Quality Score</p>
+                            {result.quality_metrics.quality_method && (
+                              <span className={`text-xs px-2 py-0.5 rounded ${
+                                result.quality_metrics.quality_method === 'llm_judge'
+                                  ? 'bg-lime-900/40 text-lime-300'
+                                  : 'bg-gray-700 text-gray-400'
+                              }`}>
+                                {result.quality_metrics.quality_method === 'llm_judge' ? 'LLM Judge' : 'Heuristic'}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-2xl font-bold text-lime-400 mb-3">
                             {qualityScore?.toFixed(1)} <span className="text-sm text-gray-500">/100</span>
                           </p>

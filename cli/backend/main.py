@@ -108,6 +108,7 @@ class BenchmarkDB:
                         avg_word_length REAL,
                         sentence_count INTEGER,
                         quality_score REAL,
+                        quality_method TEXT,
 
                         -- Error info
                         error TEXT,
@@ -154,6 +155,11 @@ class BenchmarkDB:
         if rows:
             print(f"Backfilled prompt_hash for {len(rows)} existing benchmarks")
 
+        # Add quality_method if missing
+        if 'quality_method' not in columns:
+            conn.execute("ALTER TABLE benchmarks ADD COLUMN quality_method TEXT")
+            print("Added quality_method column to database")
+
     def save(self, benchmark: dict):
         """Save a benchmark result"""
         metrics = benchmark.get("metrics", {})
@@ -172,9 +178,9 @@ class BenchmarkDB:
                     total_energy_wh, duration_seconds, tokens_generated, tokens_per_second,
                     prompt_tokens, total_tokens,
                     char_count, word_count, unique_words, unique_word_ratio,
-                    avg_word_length, sentence_count, quality_score,
+                    avg_word_length, sentence_count, quality_score, quality_method,
                     error, full_data
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 benchmark.get("id"),
                 benchmark.get("model_name"),
@@ -202,6 +208,7 @@ class BenchmarkDB:
                 quality.get("avg_word_length"),
                 quality.get("sentence_count"),
                 quality.get("quality_score"),
+                quality.get("quality_method"),
                 benchmark.get("error"),
                 json.dumps(benchmark)
             ))
@@ -353,10 +360,62 @@ class OpenAIBenchmarkRequest(BaseModel):
 # Ollama API base URL
 OLLAMA_API_URL = "http://localhost:11434"
 
-def calculate_quality_metrics(response_text: str) -> dict:
+async def evaluate_quality_with_llm_judge(prompt: str, response_text: str, judge_model: str = "gemma3:1b") -> Optional[float]:
     """
-    Calculate quality metrics for an LLM response.
-    Returns metrics for evaluating response quality.
+    Use a local LLM as a judge to evaluate response quality.
+    This follows the LLM-as-a-Judge methodology used in AI research.
+
+    Returns a quality score from 0-100, or None if evaluation fails.
+    """
+    if not response_text or len(response_text.strip()) == 0:
+        return 0.0
+
+    evaluation_prompt = f"""Rate this AI response on a scale of 0-100 based on how well it answers the question.
+
+Question: {prompt}
+
+Response: {response_text}
+
+Evaluation criteria:
+- Accuracy: Does it correctly answer the question?
+- Completeness: Does it cover the key points?
+- Clarity: Is it clear and easy to understand?
+- Relevance: Does it stay on topic?
+
+Provide only a number from 0-100 as your rating. No explanation needed."""
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            result = await client.post(
+                f"{OLLAMA_API_URL}/api/generate",
+                json={
+                    "model": judge_model,
+                    "prompt": evaluation_prompt,
+                    "stream": False
+                }
+            )
+
+            if result.status_code == 200:
+                data = result.json()
+                judge_response = data.get("response", "").strip()
+
+                # Extract number from response
+                import re
+                numbers = re.findall(r'\b(\d+(?:\.\d+)?)\b', judge_response)
+                if numbers:
+                    score = float(numbers[0])
+                    return max(0.0, min(100.0, score))
+
+        return None
+    except Exception as e:
+        print(f"LLM judge evaluation failed: {e}")
+        return None
+
+
+def calculate_quality_metrics_heuristic(response_text: str) -> dict:
+    """
+    Calculate quality metrics using improved heuristics.
+    This is used as a fallback when LLM-as-judge is not available.
     """
     if not response_text or len(response_text.strip()) == 0:
         return {
@@ -366,7 +425,8 @@ def calculate_quality_metrics(response_text: str) -> dict:
             "unique_word_ratio": 0.0,
             "avg_word_length": 0.0,
             "sentence_count": 0,
-            "quality_score": 0.0
+            "quality_score": 0.0,
+            "quality_method": "heuristic"
         }
 
     # Clean and tokenize
@@ -384,22 +444,36 @@ def calculate_quality_metrics(response_text: str) -> dict:
     # Average word length
     avg_word_length = sum(len(word) for word in words) / word_count if word_count > 0 else 0.0
 
-    # Sentence count (rough estimate)
+    # Sentence count
     sentence_terminators = text.count('.') + text.count('!') + text.count('?')
     sentence_count = max(1, sentence_terminators)
 
-    # Efficiency score: Penalize excessively long responses
-    if char_count <= 300:
-        efficiency_score = 40 
+    # Improved scoring (0-100 scale)
+    scores = []
+
+    # 1. Completeness (30 points)
+    if text.endswith(('.', '!', '?', '"', ')', ']')):
+        scores.append(30)
     else:
-        # Gradually penalize longer responses
-        penalty = ((char_count - 300) / 1000) * 40  
-        efficiency_score = max(20, 40 - penalty)  
+        scores.append(15)  
 
-    diversity_score = min(30, unique_word_ratio * 60)  
-    structure_score = min(30, (sentence_count / 3) * 30)  
+    # 2. Vocabulary diversity (30 points)
+    diversity_score = min(30, unique_word_ratio * 60)
+    scores.append(diversity_score)
 
-    quality_score = round(efficiency_score + diversity_score + structure_score, 1)
+    # 3. Length appropriateness (20 points)
+    if 50 <= word_count <= 300:
+        scores.append(20)
+    elif word_count < 50:
+        scores.append((word_count / 50) * 20)
+    else:
+        scores.append(max(10, 20 - ((word_count - 300) / 100)))
+
+    # 4. Structure (20 points)
+    structure_score = min(20, (sentence_count / 3) * 20)
+    scores.append(structure_score)
+
+    quality_score = round(sum(scores), 1)
 
     return {
         "char_count": char_count,
@@ -408,8 +482,37 @@ def calculate_quality_metrics(response_text: str) -> dict:
         "unique_word_ratio": round(unique_word_ratio, 3),
         "avg_word_length": round(avg_word_length, 2),
         "sentence_count": sentence_count,
-        "quality_score": quality_score
+        "quality_score": quality_score,
+        "quality_method": "heuristic"
     }
+
+
+async def calculate_quality_metrics(prompt: str, response_text: str) -> dict:
+    """
+    Calculate quality metrics using hybrid approach:
+    1. Try LLM-as-judge if Ollama is available
+    2. Fall back to improved heuristics
+
+    Returns quality metrics dict with score and method used.
+    """
+    # First, try LLM-as-judge if Ollama is available
+    try:
+        if await check_ollama_available():
+            judge_score = await evaluate_quality_with_llm_judge(prompt, response_text)
+
+            if judge_score is not None:
+                metrics = calculate_quality_metrics_heuristic(response_text)
+                metrics["quality_score"] = round(judge_score, 1)
+                metrics["quality_method"] = "llm_judge"
+                print(f"✓ Quality evaluated using LLM judge: {judge_score:.1f}/100")
+                return metrics
+    except Exception as e:
+        print(f"LLM judge unavailable, using heuristic scoring: {e}")
+
+    # Fall back to heuristic scoring
+    metrics = calculate_quality_metrics_heuristic(response_text)
+    print(f"✓ Quality evaluated using heuristics: {metrics['quality_score']:.1f}/100")
+    return metrics
 
 async def check_ollama_available():
     """Check if Ollama is running"""
@@ -946,7 +1049,7 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
 
             # Calculate quality metrics from full response
             full_response = inference_result["response"]
-            quality_metrics = calculate_quality_metrics(full_response)
+            quality_metrics = await calculate_quality_metrics(request.prompt, full_response)
 
             result = {
                 "id": str(uuid.uuid4()),
@@ -1035,7 +1138,7 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
 
         # Calculate quality metrics from full response
         full_response = inference_result["response"]
-        quality_metrics = calculate_quality_metrics(full_response)
+        quality_metrics = await calculate_quality_metrics(request.prompt, full_response)
 
         result = {
             "id": str(uuid.uuid4()),
