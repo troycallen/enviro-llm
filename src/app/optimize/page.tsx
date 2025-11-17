@@ -11,6 +11,7 @@ interface BenchmarkResult {
   timestamp: string;
   status?: string;
   source?: 'ollama' | 'openai' | 'lmstudio' | 'custom';
+  notes?: string;
   metrics: {
     avg_cpu_usage: number;
     avg_memory_usage: number;
@@ -60,6 +61,7 @@ export default function OptimizePage() {
 
   // Custom prompt state
   const [customPrompt, setCustomPrompt] = useState('Explain quantum computing in simple terms.');
+  const [benchmarkNotes, setBenchmarkNotes] = useState('');
 
   // Response preview
   const [selectedResult, setSelectedResult] = useState<BenchmarkResult | null>(null);
@@ -216,7 +218,8 @@ export default function OptimizePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           models: selectedModels,
-          prompt: customPrompt
+          prompt: customPrompt,
+          notes: benchmarkNotes || undefined
         })
       });
 
@@ -279,7 +282,8 @@ export default function OptimizePage() {
             base_url: 'http://localhost:1234/v1',
             model: model,
             prompt: customPrompt,
-            api_key: null
+            api_key: null,
+            notes: benchmarkNotes || undefined
           })
         });
 
@@ -327,7 +331,8 @@ export default function OptimizePage() {
           base_url: openaiUrl,
           model: openaiModel,
           prompt: customPrompt,
-          api_key: openaiApiKey || null
+          api_key: openaiApiKey || null,
+          notes: benchmarkNotes || undefined
         })
       });
 
@@ -619,7 +624,12 @@ export default function OptimizePage() {
                                   ) : (
                                     <span>⚙️</span>
                                   )}
-                                  <div className="text-white font-medium">{result.model_name}</div>
+                                  <div className="text-white font-medium">
+                                    {result.model_name}
+                                    {result.notes && (
+                                      <span className="text-xs text-gray-500 italic ml-2">({result.notes})</span>
+                                    )}
+                                  </div>
                                 </div>
                               </td>
                               <td className="py-4 px-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
@@ -1058,6 +1068,11 @@ export default function OptimizePage() {
                           <span className="text-xs text-gray-400">{sourceInfo.label}</span>
                         </div>
                         <h3 className="text-lg font-bold text-white">{result.model_name}</h3>
+                        {result.notes && (
+                          <p className="text-xs text-gray-400 mt-2 italic">
+                            &ldquo;{result.notes}&rdquo;
+                          </p>
+                        )}
                       </div>
 
                       {/* Energy Metrics */}
@@ -1332,6 +1347,19 @@ export default function OptimizePage() {
                     </p>
                   </div>
 
+                  <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">
+                      Notes <span className="text-gray-500 font-normal text-sm">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={benchmarkNotes}
+                      onChange={(e) => setBenchmarkNotes(e.target.value)}
+                      placeholder="e.g., Baseline test, Paper Figure 3, Q4 comparison..."
+                      className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200"
+                    />
+                  </div>
+
                   {ollamaModels.length === 0 ? (
                     <div className="bg-yellow-900 border border-yellow-700 p-4 rounded mb-4">
                       <p className="text-yellow-200">
@@ -1413,6 +1441,19 @@ export default function OptimizePage() {
                     <p className="text-gray-400 text-sm mt-1">
                       This prompt will be sent to each model during the benchmark. Identical prompts will be grouped together.
                     </p>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">
+                      Notes <span className="text-gray-500 font-normal text-sm">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={benchmarkNotes}
+                      onChange={(e) => setBenchmarkNotes(e.target.value)}
+                      placeholder="e.g., Baseline test, Paper Figure 3, Q4 comparison..."
+                      className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200"
+                    />
                   </div>
 
                   {!lmStudioAvailable ? (
@@ -1506,6 +1547,19 @@ export default function OptimizePage() {
                     </p>
                   </div>
 
+                  <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">
+                      Notes <span className="text-gray-500 font-normal text-sm">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={benchmarkNotes}
+                      onChange={(e) => setBenchmarkNotes(e.target.value)}
+                      placeholder="e.g., Baseline test, Paper Figure 3, Q4 comparison..."
+                      className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200"
+                    />
+                  </div>
+
                   <div className="space-y-4 mb-6">
                     <div>
                       <label className="block text-white font-semibold mb-2">API Base URL *</label>
@@ -1536,7 +1590,9 @@ export default function OptimizePage() {
                     </div>
 
                     <div>
-                      <label className="block text-white font-semibold mb-2">API Key (Optional)</label>
+                      <label className="block text-white font-semibold mb-2">
+                        API Key <span className="text-gray-500 font-normal text-sm">(optional)</span>
+                      </label>
                       <input
                         type="password"
                         value={openaiApiKey}

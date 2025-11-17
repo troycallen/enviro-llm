@@ -113,6 +113,9 @@ class BenchmarkDB:
                         -- Error info
                         error TEXT,
 
+                        -- User notes/labels
+                        notes TEXT,
+
                         -- Full JSON for compatibility
                         full_data TEXT
                     )
@@ -160,6 +163,11 @@ class BenchmarkDB:
             conn.execute("ALTER TABLE benchmarks ADD COLUMN quality_method TEXT")
             print("Added quality_method column to database")
 
+        # Add notes if missing
+        if 'notes' not in columns:
+            conn.execute("ALTER TABLE benchmarks ADD COLUMN notes TEXT")
+            print("Added notes column to database")
+
     def save(self, benchmark: dict):
         """Save a benchmark result"""
         metrics = benchmark.get("metrics", {})
@@ -179,8 +187,8 @@ class BenchmarkDB:
                     prompt_tokens, total_tokens,
                     char_count, word_count, unique_words, unique_word_ratio,
                     avg_word_length, sentence_count, quality_score, quality_method,
-                    error, full_data
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    error, notes, full_data
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 benchmark.get("id"),
                 benchmark.get("model_name"),
@@ -210,6 +218,7 @@ class BenchmarkDB:
                 quality.get("quality_score"),
                 quality.get("quality_method"),
                 benchmark.get("error"),
+                benchmark.get("notes"),
                 json.dumps(benchmark)
             ))
 
@@ -350,12 +359,14 @@ db = BenchmarkDB(DB_PATH)
 class OllamaBenchmarkRequest(BaseModel):
     models: List[str]  # e.g., ["llama3:8b", "phi3:mini"]
     prompt: str = "Explain quantum computing in simple terms."
+    notes: Optional[str] = None
 
 class OpenAIBenchmarkRequest(BaseModel):
     base_url: str  # e.g., "http://localhost:1234/v1" for LM Studio
     model: str  # e.g., "llama-3-8b"
     prompt: str = "Explain quantum computing in simple terms."
-    api_key: Optional[str] = None  
+    api_key: Optional[str] = None
+    notes: Optional[str] = None  
 
 # Ollama API base URL
 OLLAMA_API_URL = "http://localhost:11434"
@@ -854,6 +865,29 @@ async def delete_benchmark(benchmark_id: str):
     else:
         raise HTTPException(status_code=404, detail="Benchmark not found")
 
+class UpdateNotesRequest(BaseModel):
+    notes: str
+
+@app.patch("/benchmarks/{benchmark_id}/notes")
+async def update_benchmark_notes(benchmark_id: str, request: UpdateNotesRequest):
+    """Update notes for a specific benchmark"""
+    with db.get_connection() as conn:
+        cursor = conn.execute("""
+            UPDATE benchmarks SET notes = ? WHERE id = ?
+        """, (request.notes, benchmark_id))
+
+        if cursor.rowcount > 0:
+            # Also update the full_data JSON
+            row = conn.execute("SELECT full_data FROM benchmarks WHERE id = ?", (benchmark_id,)).fetchone()
+            if row:
+                data = json.loads(row["full_data"])
+                data["notes"] = request.notes
+                conn.execute("UPDATE benchmarks SET full_data = ? WHERE id = ?", (json.dumps(data), benchmark_id))
+
+            return {"status": "success", "message": "Notes updated"}
+        else:
+            raise HTTPException(status_code=404, detail="Benchmark not found")
+
 @app.get("/benchmarks/export")
 async def export_benchmarks():
     """Export all benchmarks to CSV format for analysis"""
@@ -1039,7 +1073,8 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
                 "status": "failed",
                 "source": "ollama",
                 "error": inference_result.get("error", "Unknown error"),
-                "prompt": request.prompt
+                "prompt": request.prompt,
+                "notes": request.notes
             }
         else:
             # Calculate tokens per second
@@ -1072,7 +1107,8 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
                 "quality_metrics": quality_metrics,
                 "prompt": request.prompt,
                 "response": full_response,  # Store full response
-                "response_preview": full_response[:200] + "..." if len(full_response) > 200 else full_response
+                "response_preview": full_response[:200] + "..." if len(full_response) > 200 else full_response,
+                "notes": request.notes
             }
 
         # Store result in database
@@ -1128,7 +1164,8 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
             "status": "failed",
             "source": source,
             "error": inference_result.get("error", "Unknown error"),
-            "prompt": request.prompt
+            "prompt": request.prompt,
+            "notes": request.notes
         }
     else:
         # Calculate tokens per second
@@ -1161,7 +1198,8 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
             "quality_metrics": quality_metrics,
             "prompt": request.prompt,
             "response": full_response,
-            "response_preview": full_response[:200] + "..." if len(full_response) > 200 else full_response
+            "response_preview": full_response[:200] + "..." if len(full_response) > 200 else full_response,
+            "notes": request.notes
         }
 
     # Store result in database
