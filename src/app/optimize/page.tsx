@@ -225,6 +225,8 @@ export default function OptimizePage() {
 
       if (response.ok) {
         await response.json();
+        // Clear notes field after successful benchmark
+        setBenchmarkNotes('');
         // Refresh benchmarks
         const benchmarksRes = await fetch('http://localhost:8001/benchmarks');
         if (benchmarksRes.ok) {
@@ -292,6 +294,8 @@ export default function OptimizePage() {
         }
       }
 
+      // Clear notes field after successful benchmark
+      setBenchmarkNotes('');
       // Refresh benchmarks
       const benchmarksRes = await fetch('http://localhost:8001/benchmarks');
       if (benchmarksRes.ok) {
@@ -337,6 +341,8 @@ export default function OptimizePage() {
       });
 
       if (response.ok) {
+        // Clear notes field after successful benchmark
+        setBenchmarkNotes('');
         // Refresh benchmarks
         const benchmarksRes = await fetch('http://localhost:8001/benchmarks');
         if (benchmarksRes.ok) {
