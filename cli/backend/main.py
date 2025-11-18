@@ -24,6 +24,24 @@ try:
 except ImportError:
     NVIDIA_AVAILABLE = False
 
+def clean_model_name(model_name: str) -> str:
+    """Remove common prefixes from model names for cleaner display"""
+    prefixes_to_remove = [
+        "google/",
+        "meta-llama/",
+        "microsoft/",
+        "mistralai/",
+        "huggingface/",
+        "meta/",
+        "facebook/"
+    ]
+
+    for prefix in prefixes_to_remove:
+        if model_name.startswith(prefix):
+            return model_name[len(prefix):]
+
+    return model_name
+
 app = FastAPI(title="EnviroLLM API", version="1.0.0")
 
 # Database configuration
@@ -1068,7 +1086,7 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
             # Model failed to run
             result = {
                 "id": str(uuid.uuid4()),
-                "model_name": model,
+                "model_name": clean_model_name(model),
                 "timestamp": datetime.now().isoformat(),
                 "status": "failed",
                 "source": "ollama",
@@ -1088,7 +1106,7 @@ async def ollama_benchmark(request: OllamaBenchmarkRequest):
 
             result = {
                 "id": str(uuid.uuid4()),
-                "model_name": model,
+                "model_name": clean_model_name(model),
                 "timestamp": datetime.now().isoformat(),
                 "status": "completed",
                 "source": "ollama",
@@ -1159,7 +1177,7 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
         # Model failed to run
         result = {
             "id": str(uuid.uuid4()),
-            "model_name": request.model,
+            "model_name": clean_model_name(request.model),
             "timestamp": datetime.now().isoformat(),
             "status": "failed",
             "source": source,
@@ -1179,7 +1197,7 @@ async def openai_benchmark(request: OpenAIBenchmarkRequest):
 
         result = {
             "id": str(uuid.uuid4()),
-            "model_name": request.model,
+            "model_name": clean_model_name(request.model),
             "timestamp": datetime.now().isoformat(),
             "status": "completed",
             "source": source,
