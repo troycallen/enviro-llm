@@ -12,6 +12,8 @@ Large language models are increasingly being deployed locally for privacy and ac
 - **Real-Time Monitoring**: Track energy consumption and resource usage with visual dashboards
 - **Inference Benchmarking**: Measure tokens per second, latency, and inference performance across models
 - **Multi-Platform Benchmarking**: Automated energy and performance testing for Ollama, LM Studio, vLLM, text-generation-webui, and other OpenAI-compatible APIs
+- **LLM-as-a-Judge Evaluation**: Optional quality assessment using another LLM to evaluate response quality
+- **Model Recommendations**: Automatically suggests best models based on quality/energy efficiency, speed, and energy use
 - **CLI Tool**: Command-line interface for detecting and monitoring system stats and LLM processes
 - **Optimization Recommendations**: Hardware-specific suggestions for reducing energy consumption
 
@@ -69,6 +71,7 @@ npx envirollm benchmark --models phi3:mini --prompt "Write a sorting function"
 - Tokens per second
 - CPU/GPU/memory usage
 - Quantization detection (Q4, Q8, FP16)
+- Response quality evaluation (heuristic or LLM-as-a-judge)
 - Actual response output (for quality comparison)
 
 ### OpenAI-Compatible API Benchmarking

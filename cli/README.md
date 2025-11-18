@@ -80,7 +80,7 @@ npx envirollm track -p python    # Track specific process by name
 - CPU/GPU/memory usage
 - Quantization detection (Q4, Q8, FP16)
 - Power draw (W)
-- Response quality comparison
+- Response quality evaluation (heuristic or LLM-as-a-judge)
 
 **Data Storage:**
 All benchmark results are stored locally at `~/.envirollm/benchmarks.db`. Your data never leaves your machine.
@@ -92,13 +92,17 @@ You can also run benchmarks using the web interface at **[envirollm.com/optimize
 - Visual model selection for Ollama, LM Studio, and custom APIs
 - CSV export functionality for benchmark data
 - Response comparison view to evaluate output quality
+- LLM-as-a-judge quality evaluation
 - Custom prompt configuration
+- Model recommendations based on speed/quality/energy efficiency
 - Same backend - results sync between CLI and web
 
 ## Features
 
 - **Real-time Monitoring**: CPU, GPU, memory, and power consumption
 - **Multi-Platform Benchmarking**: Support for Ollama, LM Studio, vLLM, and OpenAI-compatible APIs
+- **LLM-as-a-Judge Evaluation**: Optional quality assessment using another LLM to evaluate response quality
+- **Model Recommendations**: Automatically suggests best models based on quality/energy efficiency, speed, and energy use
 - **Optimization Recommendations**: System-specific suggestions for reducing energy usage
 - **Process Detection**: Automatic identification of running LLM processes
 
