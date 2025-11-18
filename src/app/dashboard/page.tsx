@@ -397,9 +397,10 @@ export default function Dashboard() {
         )}
 
         {(!isConnected || (error && error.includes('demo'))) && (
-          <div className="bg-gray-800 border border-gray-700 p-8 rounded mb-8">
+          <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-4">Getting Started</h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="bg-gray-800 border border-gray-700 p-8 rounded">
+              <div className="space-y-4 text-gray-300">
               <div>
                 <h3 className="text-lg font-semibold text-blue-400 mb-2">1. Run CLI (no installation needed)</h3>
                 <code className="bg-gray-900 px-4 py-2 rounded block">
@@ -410,6 +411,7 @@ export default function Dashboard() {
               <div>
                 <h3 className="text-lg font-semibold text-green-400 mb-2">2. View Your Real Metrics</h3>
                 <p>Return to this dashboard to see your local system metrics in real-time.</p>
+              </div>
               </div>
             </div>
           </div>
