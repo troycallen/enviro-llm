@@ -615,31 +615,39 @@ export default function OptimizePage() {
                               }`}
                             >
                               <td className="py-4 px-3">
-                                <div className="flex items-center gap-2">
-                                  {sourceInfo.image ? (
-                                    <Image
-                                      src={sourceInfo.image}
-                                      alt={sourceInfo.label}
-                                      width={20}
-                                      height={20}
-                                      className="rounded"
-                                    />
-                                  ) : (
-                                    <span>⚙️</span>
-                                  )}
-                                  <div className="text-white font-medium">
+                                <div className="flex items-start gap-2">
+                                  <div className="flex-shrink-0 mt-1">
+                                    {sourceInfo.image ? (
+                                      <Image
+                                        src={sourceInfo.image}
+                                        alt={sourceInfo.label}
+                                        width={32}
+                                        height={32}
+                                        className="rounded"
+                                      />
+                                    ) : (
+                                      <span className="text-2xl">⚙️</span>
+                                    )}
+                                  </div>
+                                  <div
+                                    className="text-white font-medium text-sm"
+                                    title={`Run at ${new Date(result.timestamp).toLocaleString()}`}
+                                  >
                                     {result.model_name}
                                     {result.notes && (
                                       <span className="text-xs text-gray-500 italic ml-2">({result.notes})</span>
                                     )}
+                                    <div className="text-xs text-gray-500 font-normal mt-0.5">
+                                      {new Date(result.timestamp).toLocaleString()}
+                                    </div>
                                   </div>
                                 </div>
                               </td>
-                              <td className="py-4 px-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
-                              <td className="py-4 px-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
-                              <td className="py-4 px-3 text-right text-blue-400 font-mono">{result.metrics.duration_seconds.toFixed(1)}</td>
-                              <td className="py-4 px-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
-                              <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
+                              <td className="py-4 px-3 text-right text-green-400 font-mono text-sm">{result.metrics.total_energy_wh.toFixed(4)}</td>
+                              <td className="py-4 px-3 text-right text-teal-400 font-mono text-sm">{whPerToken}</td>
+                              <td className="py-4 px-3 text-right text-blue-400 font-mono text-sm">{result.metrics.duration_seconds.toFixed(1)}</td>
+                              <td className="py-4 px-3 text-right text-purple-400 font-mono text-sm">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
+                              <td className={`py-4 px-3 text-right font-mono text-sm font-bold ${qualityColor}`}>
                                 <div className="flex items-center justify-end gap-1">
                                   {result.quality_metrics?.quality_method === 'llm_judge' && (
                                     <span className="text-gray-400 text-xs" title="Evaluated by LLM Judge">[J]</span>
@@ -734,26 +742,39 @@ export default function OptimizePage() {
                           }`}
                         >
                           <td className="py-4 px-3">
-                            <div className="flex items-center gap-2">
-                              {sourceInfo.image ? (
-                                <Image
-                                  src={sourceInfo.image}
-                                  alt={sourceInfo.label}
-                                  width={20}
-                                  height={20}
-                                  className="rounded"
-                                />
-                              ) : (
-                                <span>⚙️</span>
-                              )}
-                              <div className="text-white font-medium">{result.model_name}</div>
+                            <div className="flex items-start gap-2">
+                              <div className="flex-shrink-0 mt-1">
+                                {sourceInfo.image ? (
+                                  <Image
+                                    src={sourceInfo.image}
+                                    alt={sourceInfo.label}
+                                    width={32}
+                                    height={32}
+                                    className="rounded"
+                                  />
+                                ) : (
+                                  <span className="text-2xl">⚙️</span>
+                                )}
+                              </div>
+                              <div
+                                className="text-white font-medium text-sm"
+                                title={`Run at ${new Date(result.timestamp).toLocaleString()}`}
+                              >
+                                {result.model_name}
+                                {result.notes && (
+                                  <span className="text-xs text-gray-500 italic ml-2">({result.notes})</span>
+                                )}
+                                <div className="text-xs text-gray-500 font-normal mt-0.5">
+                                  {new Date(result.timestamp).toLocaleString()}
+                                </div>
+                              </div>
                             </div>
                           </td>
-                          <td className="py-4 px-3 text-right text-green-400 font-mono">{result.metrics.total_energy_wh.toFixed(4)}</td>
-                          <td className="py-4 px-3 text-right text-teal-400 font-mono text-xs">{whPerToken}</td>
-                          <td className="py-4 px-3 text-right text-blue-400 font-mono">{result.metrics.duration_seconds.toFixed(1)}</td>
-                          <td className="py-4 px-3 text-right text-purple-400 font-mono">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
-                          <td className={`py-4 px-3 text-right font-mono font-bold ${qualityColor}`}>
+                          <td className="py-4 px-3 text-right text-green-400 font-mono text-sm">{result.metrics.total_energy_wh.toFixed(4)}</td>
+                          <td className="py-4 px-3 text-right text-teal-400 font-mono text-sm">{whPerToken}</td>
+                          <td className="py-4 px-3 text-right text-blue-400 font-mono text-sm">{result.metrics.duration_seconds.toFixed(1)}</td>
+                          <td className="py-4 px-3 text-right text-purple-400 font-mono text-sm">{result.metrics.tokens_per_second?.toFixed(1) || 'N/A'}</td>
+                          <td className={`py-4 px-3 text-right font-mono text-sm font-bold ${qualityColor}`}>
                             <div className="flex items-center justify-end gap-1">
                               {result.quality_metrics?.quality_method === 'llm_judge' && (
                                 <span className="text-gray-400 text-xs" title="Evaluated by LLM Judge">[J]</span>
