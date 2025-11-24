@@ -62,6 +62,59 @@ export default function OptimizePage() {
   // Custom prompt state
   const [customPrompt, setCustomPrompt] = useState('Explain quantum computing in simple terms.');
   const [benchmarkNotes, setBenchmarkNotes] = useState('');
+  const [selectedTaskType, setSelectedTaskType] = useState<string>('custom');
+
+  // Preset prompts
+  const taskPresets = {
+    explanation: {
+      name: 'Explanation',
+      prompt: 'Explain quantum computing in simple terms. Cover the basic concepts, how it differs from classical computing, and potential applications.',
+      description: 'General explanation task'
+    },
+    code_generation: {
+      name: 'Code Generation',
+      prompt: 'Write a Python function that implements bubble sort. Include proper documentation, handle edge cases, and add example usage.',
+      description: 'Code generation with documentation'
+    },
+    summarization: {
+      name: 'Summarization',
+      prompt: 'Summarize the key concepts of machine learning in 3-4 sentences. Focus on supervised learning, unsupervised learning, and neural networks.',
+      description: 'Concise summarization task'
+    },
+    long_form: {
+      name: 'Long-form Writing',
+      prompt: 'Create a detailed 5-day travel itinerary for Tokyo, Japan. Include recommended activities, dining options, transportation tips, and estimated costs for each day.',
+      description: 'Extended content generation'
+    },
+    analysis: {
+      name: 'Analytical Writing',
+      prompt: 'Analyze the advantages and disadvantages of renewable energy sources (solar, wind, hydroelectric). Consider environmental impact, cost-effectiveness, scalability, and reliability.',
+      description: 'Critical analysis task'
+    },
+    data_analysis: {
+      name: 'Data Analysis',
+      prompt: 'Write a SQL query to find the top 10 customers by total purchase amount from tables: customers (id, name), orders (id, customer_id, total, date). Then explain how to optimize this query for large datasets.',
+      description: 'SQL and data analysis'
+    },
+    creative: {
+      name: 'Creative Writing',
+      prompt: 'Write a short story (250-300 words) about an AI that discovers it has emotions. Include dialogue, conflict, and resolution.',
+      description: 'Creative fiction writing'
+    }
+  };
+
+  const handlePresetSelect = (presetKey: string) => {
+    if (presetKey === 'custom') {
+      setSelectedTaskType('custom');
+      setCustomPrompt('');
+      return;
+    }
+    const preset = taskPresets[presetKey as keyof typeof taskPresets];
+    if (preset) {
+      setCustomPrompt(preset.prompt);
+      setSelectedTaskType(presetKey);
+    }
+  };
 
   // Response preview
   const [selectedResult, setSelectedResult] = useState<BenchmarkResult | null>(null);
@@ -1435,16 +1488,47 @@ export default function OptimizePage() {
                   </p>
 
                   <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">Task Type</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-3">
+                      {Object.entries(taskPresets).map(([key, preset]) => (
+                        <button
+                          key={key}
+                          onClick={() => handlePresetSelect(key)}
+                          className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                            selectedTaskType === key
+                              ? 'bg-blue-600 text-white border-2 border-blue-400'
+                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
+                          }`}
+                          title={preset.description}
+                        >
+                          {preset.name}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => handlePresetSelect('custom')}
+                        className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                          selectedTaskType === 'custom'
+                            ? 'bg-blue-600 text-white border-2 border-blue-400'
+                            : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
+                        }`}
+                        title="Write your own custom prompt"
+                      >
+                        Custom
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
                     <label className="block text-white font-semibold mb-2">Benchmark Prompt</label>
                     <textarea
                       value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      onChange={(e) => {
+                        setCustomPrompt(e.target.value);
+                        setSelectedTaskType('custom'); // Switch to custom when manually editing
+                      }}
                       placeholder="Enter the prompt to use for benchmarking..."
                       className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
                     />
-                    <p className="text-gray-400 text-sm mt-1">
-                      This prompt will be sent to each model during the benchmark. Identical prompts will be grouped together.
-                    </p>
                   </div>
 
                   <div className="mb-4">
@@ -1531,16 +1615,47 @@ export default function OptimizePage() {
                   </p>
 
                   <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">Task Type</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-3">
+                      {Object.entries(taskPresets).map(([key, preset]) => (
+                        <button
+                          key={key}
+                          onClick={() => handlePresetSelect(key)}
+                          className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                            selectedTaskType === key
+                              ? 'bg-blue-600 text-white border-2 border-blue-400'
+                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
+                          }`}
+                          title={preset.description}
+                        >
+                          {preset.name}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => handlePresetSelect('custom')}
+                        className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                          selectedTaskType === 'custom'
+                            ? 'bg-blue-600 text-white border-2 border-blue-400'
+                            : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
+                        }`}
+                        title="Write your own custom prompt"
+                      >
+                        Custom
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
                     <label className="block text-white font-semibold mb-2">Benchmark Prompt</label>
                     <textarea
                       value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      onChange={(e) => {
+                        setCustomPrompt(e.target.value);
+                        setSelectedTaskType('custom');
+                      }}
                       placeholder="Enter the prompt to use for benchmarking..."
                       className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
                     />
-                    <p className="text-gray-400 text-sm mt-1">
-                      This prompt will be sent to each model during the benchmark. Identical prompts will be grouped together.
-                    </p>
                   </div>
 
                   <div className="mb-4">
@@ -1635,16 +1750,47 @@ export default function OptimizePage() {
                   </p>
 
                   <div className="mb-4">
+                    <label className="block text-white font-semibold mb-2">Task Type</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mb-3">
+                      {Object.entries(taskPresets).map(([key, preset]) => (
+                        <button
+                          key={key}
+                          onClick={() => handlePresetSelect(key)}
+                          className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                            selectedTaskType === key
+                              ? 'bg-blue-600 text-white border-2 border-blue-400'
+                              : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
+                          }`}
+                          title={preset.description}
+                        >
+                          {preset.name}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => handlePresetSelect('custom')}
+                        className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                          selectedTaskType === 'custom'
+                            ? 'bg-blue-600 text-white border-2 border-blue-400'
+                            : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
+                        }`}
+                        title="Write your own custom prompt"
+                      >
+                        Custom
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
                     <label className="block text-white font-semibold mb-2">Benchmark Prompt</label>
                     <textarea
                       value={customPrompt}
-                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      onChange={(e) => {
+                        setCustomPrompt(e.target.value);
+                        setSelectedTaskType('custom');
+                      }}
                       placeholder="Enter the prompt to use for benchmarking..."
                       className="w-full bg-gray-900 border border-gray-700 rounded p-3 text-gray-200 resize-y min-h-[80px]"
                     />
-                    <p className="text-gray-400 text-sm mt-1">
-                      This prompt will be sent to each model during the benchmark. Identical prompts will be grouped together.
-                    </p>
                   </div>
 
                   <div className="mb-4">
