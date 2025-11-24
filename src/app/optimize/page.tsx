@@ -1496,7 +1496,7 @@ export default function OptimizePage() {
                           onClick={() => handlePresetSelect(key)}
                           className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                             selectedTaskType === key
-                              ? 'bg-blue-600 text-white border-2 border-blue-400'
+                              ? 'bg-teal-600 text-white border-2 border-teal-400'
                               : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
                           }`}
                           title={preset.description}
@@ -1508,7 +1508,7 @@ export default function OptimizePage() {
                         onClick={() => handlePresetSelect('custom')}
                         className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                           selectedTaskType === 'custom'
-                            ? 'bg-blue-600 text-white border-2 border-blue-400'
+                            ? 'bg-teal-600 text-white border-2 border-teal-400'
                             : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
                         }`}
                         title="Write your own custom prompt"
@@ -1623,7 +1623,7 @@ export default function OptimizePage() {
                           onClick={() => handlePresetSelect(key)}
                           className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                             selectedTaskType === key
-                              ? 'bg-blue-600 text-white border-2 border-blue-400'
+                              ? 'bg-teal-600 text-white border-2 border-teal-400'
                               : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
                           }`}
                           title={preset.description}
@@ -1635,7 +1635,7 @@ export default function OptimizePage() {
                         onClick={() => handlePresetSelect('custom')}
                         className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                           selectedTaskType === 'custom'
-                            ? 'bg-blue-600 text-white border-2 border-blue-400'
+                            ? 'bg-teal-600 text-white border-2 border-teal-400'
                             : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
                         }`}
                         title="Write your own custom prompt"
@@ -1758,7 +1758,7 @@ export default function OptimizePage() {
                           onClick={() => handlePresetSelect(key)}
                           className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                             selectedTaskType === key
-                              ? 'bg-blue-600 text-white border-2 border-blue-400'
+                              ? 'bg-teal-600 text-white border-2 border-teal-400'
                               : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
                           }`}
                           title={preset.description}
@@ -1770,7 +1770,7 @@ export default function OptimizePage() {
                         onClick={() => handlePresetSelect('custom')}
                         className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                           selectedTaskType === 'custom'
-                            ? 'bg-blue-600 text-white border-2 border-blue-400'
+                            ? 'bg-teal-600 text-white border-2 border-teal-400'
                             : 'bg-gray-800 text-gray-300 border border-gray-700 hover:bg-gray-700'
                         }`}
                         title="Write your own custom prompt"
