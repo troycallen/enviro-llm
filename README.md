@@ -11,9 +11,11 @@ Large language models are increasingly being deployed locally for privacy and ac
 ### Key Features
 - **Real-Time Monitoring**: Track energy consumption and resource usage with visual dashboards
 - **Inference Benchmarking**: Measure tokens per second, latency, and inference performance across models
+- **Task-Specific Presets**: 7 built-in prompt presets for different workload types (code generation, analysis, creative writing, etc.)
 - **Multi-Platform Benchmarking**: Automated energy and performance testing for Ollama, LM Studio, vLLM, text-generation-webui, and other OpenAI-compatible APIs
 - **LLM-as-a-Judge Evaluation**: Optional quality assessment using another LLM to evaluate response quality
 - **Model Recommendations**: Automatically suggests best models based on quality/energy efficiency, speed, and energy use
+- **Interactive Visualizations**: Compare models across prompts with energy/speed charts and side-by-side analysis
 - **CLI Tool**: Command-line interface for detecting and monitoring system stats and LLM processes
 - **Optimization Recommendations**: Hardware-specific suggestions for reducing energy consumption
 
@@ -93,6 +95,46 @@ npx envirollm benchmark-openai --url http://localhost:1234/v1 --model llama-3-8b
 ```
 
 Collects the same energy and performance metrics as Ollama benchmarking.
+
+### Web Interface Benchmarking
+
+Use the web dashboard at [envirollm.com/optimize](https://envirollm.com/optimize) for an interactive benchmarking experience:
+
+**Task-Specific Presets:**
+Choose from 7 preset prompts designed to test different workload types:
+- **Explanation**: General knowledge and concept explanation
+- **Code Generation**: Programming tasks with documentation
+- **Summarization**: Concise information synthesis
+- **Long-form Writing**: Extended content creation (travel guides, articles)
+- **Analytical Writing**: Critical analysis and comparison
+- **Data Analysis**: SQL queries and technical problem-solving
+- **Creative Writing**: Fiction and narrative generation
+
+Or use **Custom** to write your own prompt.
+
+**Multi-Model Comparison:**
+- Select multiple models from Ollama, LM Studio, or custom APIs
+- Run identical prompts across all selected models
+- View grouped results with interactive charts
+- Get automatic recommendations for best overall, most efficient, fastest, and highest quality
+
+**Example Workflow:**
+1. Visit [envirollm.com/optimize](https://envirollm.com/optimize)
+2. Click "Run Benchmark"
+3. Select a task preset (e.g., "Code Generation") or write a custom prompt
+4. Choose models to compare
+5. View results with energy/speed visualizations and quality scores
+
+**Screenshots:**
+
+*Task-specific presets and multi-model selection:*
+![Benchmark Interface](public/benchmarks.png)
+
+*Interactive comparison charts and energy/speed analysis:*
+![Comparison View](public/comparisons.png)
+
+*Automatic model recommendations based on your benchmarks:*
+![Model Recommendations](public/recommendations.png)
 
 ### Development Setup
 
