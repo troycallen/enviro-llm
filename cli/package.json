@@ -1,7 +1,7 @@
 {
   "name": "envirollm",
   "version": "1.2.0",
-  "description": "CLI tool for monitoring local LLM resource usage",
+  "description": "CLI tool for benchmarking and monitoring local LLM energy consumption and performance",
   "main": "index.js",
   "bin": {
     "envirollm": "./index.js"
@@ -21,7 +21,11 @@
     "energy",
     "optimization",
     "gpu",
-    "ai"
+    "ai",
+    "benchmarking",
+    "ollama",
+    "sustainability",
+    "inference"
   ],
   "author": "EnviroLLM (Troy Allen)",
   "license": "MIT",
