@@ -89,7 +89,9 @@ All benchmark results are stored locally at `~/.envirollm/benchmarks.db`. Your d
 
 You can also run benchmarks using the web interface at **[envirollm.com/optimize](https://envirollm.com/optimize)** after starting the monitoring service with `npx envirollm start`. The web UI provides:
 
+- **Task-Specific Presets**: 7 built-in prompts for different workload types (code generation, analysis, creative writing, etc.)
 - Visual model selection for Ollama, LM Studio, and custom APIs
+- Interactive comparison charts showing energy vs. speed tradeoffs
 - CSV export functionality for benchmark data
 - Response comparison view to evaluate output quality
 - LLM-as-a-judge quality evaluation
