@@ -131,6 +131,58 @@ export default function Home() {
             </a>
           </div>
         </main>
+
+        {/* Example Screenshots Section */}
+        <section className="mt-16">
+          <h2 className="text-3xl font-semibold text-white text-center mb-8">What You Can Expect</h2>
+
+          <div className="space-y-12">
+            {/* Benchmarking Example */}
+            <div className="bg-gray-800/90 border border-gray-700 p-8 rounded-lg">
+              <h3 className="text-2xl font-semibold text-teal-400 mb-4">Model Benchmarking</h3>
+              <p className="text-gray-300 mb-6 text-lg">
+                Test models with custom or preset prompts. Compare energy consumption, speed, and quality across different models.
+              </p>
+              <div className="border border-gray-700 rounded-lg overflow-hidden">
+                <img
+                  src="/benchmarks.png"
+                  alt="Benchmark interface showing task presets and model selection"
+                  className="w-full h-auto"
+                />
+              </div>
+            </div>
+
+            {/* Comparisons Example */}
+            <div className="bg-gray-800/90 border border-gray-700 p-8 rounded-lg">
+              <h3 className="text-2xl font-semibold text-emerald-400 mb-4">Side-by-Side Comparisons</h3>
+              <p className="text-gray-300 mb-6 text-lg">
+                Visualize performance metrics and identify the best model for your specific use case.
+              </p>
+              <div className="border border-gray-700 rounded-lg overflow-hidden">
+                <img
+                  src="/comparisons.png"
+                  alt="Comparison view showing energy efficiency and performance charts"
+                  className="w-full h-auto"
+                />
+              </div>
+            </div>
+
+            {/* Recommendations Example */}
+            <div className="bg-gray-800/90 border border-gray-700 p-8 rounded-lg">
+              <h3 className="text-2xl font-semibold text-lime-400 mb-4">Smart Recommendations</h3>
+              <p className="text-gray-300 mb-6 text-lg">
+                Get automatic model recommendations based on your benchmarks. 
+              </p>
+              <div className="border border-gray-700 rounded-lg overflow-hidden">
+                <img
+                  src="/recommendations.png"
+                  alt="Model recommendations showing best overall, most efficient, fastest, and best quality options"
+                  className="w-full h-auto"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
         </div>
       </div>
     </div>
