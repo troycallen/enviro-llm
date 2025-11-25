@@ -20,18 +20,16 @@ export default function NavBar() {
 
         <div className="flex items-center space-x-8">
           <Link
-            href="/faq"
+            href="/dashboard"
             className="text-gray-300 hover:text-emerald-400 transition-colors font-medium">
-            FAQ
+            Monitoring
           </Link>
 
-          <a
-            href="https://github.com/troycallen/envirollm"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/optimize"
             className="text-gray-300 hover:text-emerald-400 transition-colors font-medium">
-            GitHub
-          </a>
+            Benchmarks
+          </Link>
 
         </div>
       </div>

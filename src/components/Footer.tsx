@@ -15,18 +15,13 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-gray-400 hover:text-emerald-400 transition-colors">
-                  FAQ
+                <Link href="/dashboard" className="text-gray-400 hover:text-emerald-400 transition-colors">
+                  Monitoring
                 </Link>
               </li>
               <li>
                 <Link href="/optimize" className="text-gray-400 hover:text-emerald-400 transition-colors">
                   Benchmarks
-                </Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className="text-gray-400 hover:text-emerald-400 transition-colors">
-                  Monitoring
                 </Link>
               </li>
             </ul>
@@ -57,14 +52,9 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a
-                  href="https://github.com/troycallen/envirollm/blob/main/README.md"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-emerald-400 transition-colors"
-                >
-                  Documentation
-                </a>
+                <Link href="/faq" className="text-gray-400 hover:text-emerald-400 transition-colors">
+                  Frequently Asked Questions
+                </Link>
               </li>
             </ul>
           </div>
