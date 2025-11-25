@@ -95,25 +95,13 @@ export default function Home() {
               Track your system performance across setups.
               Monitor CPU, GPU, and memory usage in real-time and get generic recommendations.
             </p>
-            <div className="flex items-center gap-4">
-              <a
-                href="/dashboard"
-                onClick={handleStartMonitoring}
-                className={`inline-block px-6 py-3 rounded-md transition-all font-medium w-fit ${
-                  isMonitoring
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                }`}
-              >
-                {isMonitoring ? 'View Monitoring' : 'Start Monitoring'}
-              </a>
-              <button
-                onClick={handleStopMonitoring}
-                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-all font-medium w-fit"
-              >
-                Stop Monitoring
-              </button>
-            </div>
+            <a
+              href="/dashboard"
+              onClick={handleStartMonitoring}
+              className="inline-block px-6 py-3 rounded-md transition-all font-medium w-fit bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              {isMonitoring ? 'View Monitoring' : 'Start Monitoring'}
+            </a>
           </div>
 
           <div className="bg-gray-800/90 border border-gray-700 p-10 flex flex-col rounded-lg hover:border-lime-500/50 transition-colors">
