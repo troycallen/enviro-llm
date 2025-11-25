@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import NavBar from '../../components/NavBar';
+import Footer from '../../components/Footer';
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ZAxis, Cell, LabelList } from 'recharts';
 
 interface BenchmarkResult {
@@ -1902,6 +1903,7 @@ export default function OptimizePage() {
         )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

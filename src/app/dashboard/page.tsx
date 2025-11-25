@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import NavBar from '../../components/NavBar';
+import Footer from '../../components/Footer';
 interface GPU {
   id: number;
   name: string;
@@ -424,6 +425,7 @@ export default function Dashboard() {
         )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

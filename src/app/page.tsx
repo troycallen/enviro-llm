@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import NavBar from '../components/NavBar';
+import Footer from '../components/Footer';
 
 export default function Home() {
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -185,6 +186,7 @@ export default function Home() {
         </section>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
