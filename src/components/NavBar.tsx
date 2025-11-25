@@ -13,7 +13,7 @@ export default function NavBar() {
 
         <Link
             href="/"
-            className="text-gray-300 hover:text-white transition-colors font-medium">
+            className="text-gray-300 hover:text-emerald-400 transition-colors font-medium">
             Home
         </Link>
         </div>
@@ -21,7 +21,7 @@ export default function NavBar() {
         <div className="flex items-center space-x-8">
           <Link
             href="/faq"
-            className="text-gray-300 hover:text-white transition-colors font-medium">
+            className="text-gray-300 hover:text-emerald-400 transition-colors font-medium">
             FAQ
           </Link>
 
@@ -29,7 +29,7 @@ export default function NavBar() {
             href="https://github.com/troycallen/envirollm"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-300 hover:text-white transition-colors font-medium">
+            className="text-gray-300 hover:text-emerald-400 transition-colors font-medium">
             GitHub
           </a>
 

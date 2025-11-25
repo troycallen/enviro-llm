@@ -89,7 +89,7 @@ export default function FAQ() {
           <div className="bg-gray-800/90 border border-gray-700 p-8 rounded-lg">
             <h2 className="text-2xl font-semibold text-emerald-400 mb-4">Can I contribute?</h2>
             <p className="text-gray-300 leading-relaxed ">
-              Absolutely! Everything&apos;s available on <a href="https://github.com/troycallen/envirollm" className="text-teal-400 hover:text-teal-300 underline" target="_blank" rel="noopener noreferrer">GitHub</a>.
+              Absolutely! Everything&apos;s available on <a href="https://github.com/troycallen/envirollm" className="text-teal-400 hover:text-emerald-400 underline" target="_blank" rel="noopener noreferrer">GitHub</a>.
             </p>
           </div>
 
@@ -99,7 +99,7 @@ export default function FAQ() {
               <p><strong>Via Web Interface:</strong></p>
               <ol className="list-decimal list-inside space-y-2 ml-4">
                 <li>Start the backend: <code className="bg-gray-900 px-2 py-1 rounded text-emerald-400">npx envirollm start</code></li>
-                <li>Visit <a href="/optimize" className="text-teal-400 hover:text-teal-300 underline">envirollm.com/optimize</a></li>
+                <li>Visit <a href="/optimize" className="text-teal-400 hover:text-emerald-400 underline">envirollm.com/optimize</a></li>
                 <li>Click &quot;Run Benchmark&quot;</li>
                 <li>Choose a task preset or write a custom prompt</li>
                 <li>Select models to compare</li>
